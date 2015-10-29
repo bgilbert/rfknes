@@ -20,7 +20,7 @@
 
 .include "nes.asm"
 .include "string.asm"
-.include "chr/chr.asm"
+.include "../chr/chr.asm"
 
 .section zeropage
 ; Persistent state
