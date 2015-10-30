@@ -37,6 +37,13 @@ string	.segment
 	.strings \1, \2, [\3]
 	.endm
 
+; Record string in string table
+; args: string_name
+stringentry .macro
+	.byte <\1_addr
+	.byte ((\1_addr >> 6) & $fc) | \1_bank
+	.endm
+
 ; Print a string array
 ; args: nametable_base, x, y, bank, addr
 print	.macro

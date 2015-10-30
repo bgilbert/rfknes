@@ -20,6 +20,7 @@
 
 .include "nes.asm"
 .include "string.asm"
+.include "../nki/nki.asm"
 .include "../chr/chr.asm"
 
 .section zeropage
@@ -27,8 +28,8 @@
 nmi_done	.byte ?
 .send
 
-.strings hello, 0, ["Hello,", "NES"]
-.string world, 1, "world."
+.strings hello, 2, ["Hello,", "NES"]
+.string world, 2, "world."
 
 .section fixed
 start	.proc
