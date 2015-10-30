@@ -82,10 +82,9 @@ next	bit PPUSTATUS	; clear latch
 +	lda (addr),y	; load character
 	bne -		; continue until NUL
 
-	;  return if done
+	; break if done
 	cpy #0		; did the string have 0 characters?
-	bne +
-	rts
+	beq done
 
 	; update string pointer
 +	tya		; move count to accumulator
@@ -108,5 +107,7 @@ next	bit PPUSTATUS	; clear latch
 	stx nt_addr + 1	; and write back
 
 +	jmp next	; loop
+
+done	rts
 	.pend
 .send
