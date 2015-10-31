@@ -94,8 +94,8 @@ next	bit PPUSTATUS	; clear latch
 
 	; update string pointer
 +	tya		; move count to accumulator
-	sec		; set carry to account for null byte
-	adc addr	; add to string address
+	adc addr	; add to string address.  carry must be set to
+			; account for null byte; already set by cpx #0 above
 	sta addr	; write it back
 	bcc +		; need to update high byte?
 	ldy addr + 1	; yes; load,
