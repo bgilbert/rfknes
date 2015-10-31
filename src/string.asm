@@ -47,11 +47,9 @@ stringentry .macro
 ; Print a string array
 ; args: nametable_base, x, y, bank, addr
 print	.macro
-	.cp #<\5, tempA
-	.cp #>\5, tempA + 1
+	.cp2 #\5, tempA
 	coord_addr = \1 + \3 * 32 + \2
-	.cp #<coord_addr, tempB
-	.cp #>coord_addr, tempB + 1
+	.cp2 #coord_addr, tempB
 	lda #\4
 	jsr do_print
 	.endm

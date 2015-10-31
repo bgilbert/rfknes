@@ -164,4 +164,14 @@ cp	.macro
 	sta \2
 	.endm
 
+; Copy 16-bit value to location, clobbering A
+; args: value, location
+cp2	.macro
+	value = \1
+	lda <value
+	sta \2
+	lda >value
+	sta \2 + 1
+	.endm
+
 .send

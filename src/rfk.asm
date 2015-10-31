@@ -43,11 +43,9 @@ start	.proc
 	bne -
 
 	; print NKI
-	.cp #<690, tempA
-	.cp #>690, tempA + 1
+	.cp2 #690, tempA
 	coord_addr = NAMETABLE_0 + 2 * 32 + 2
-	.cp #<coord_addr, tempB
-	.cp #>coord_addr, tempB + 1
+	.cp2 #coord_addr, tempB
 	jsr print_nki
 
 	; reset scroll after update
