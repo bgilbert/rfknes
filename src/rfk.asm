@@ -44,8 +44,7 @@ start	.proc
 
 	; print NKI
 	.cp2 #690, tempA
-	coord_addr = NAMETABLE_0 + 2 * 32 + 2
-	.cp2 #coord_addr, tempB
+	ldx #$a0
 	jsr print_nki
 
 	; reset scroll after update
@@ -84,28 +83,48 @@ irq	.proc
 	.pend
 
 ; Print an NKI
+; X - high byte of nametable address; set high bit to draw at bottom
 ; tempA - NKI number
-; tempB - nametable address
 print_nki .proc
+	off_top = 2 + 3 * 32
+	off_bot = 2 + 23 * 32
+
+	; get string address
 	asl tempA	; get table offset by doubling nki_num: low
 	rol tempA + 1	; and high
-	.cp #<nki_table, tempC ; copy low byte of table base to tempC.L
+	.cp #<nki_table, tempB ; copy low byte of table base to tempB.L
 	lda #>nki_table	; load high byte
 	clc		; clear carry
 	adc tempA + 1	; add high byte of table offset
-	sta tempC + 1	; and store it to tempC.H
+	sta tempB + 1	; and store it to tempB.H
 	ldy tempA	; get low byte of offset for indirect indexed
-	lda (tempC),y	; load low byte of string address
+	lda (tempB),y	; load low byte of string address
 	sta tempA	; store to tempA.L
 	iny		; increment offset for entry.H
-	lda (tempC),y	; load entry.H
-	tax		; copy to X
+	lda (tempB),y	; load entry.H
+	tay		; copy to Y
 	lsr		; shift to recover high bits of string address
 	lsr
 	ora #$80	; fix the top two bits
 	sta tempA + 1	; and store to tempA.H
-	txa		; get entry.H back again
+
+	; load nametable address
+	txa		; move arg to A; test high bit
+	bmi bottom	; branch if drawing at bottom
+	ldx #<off_top	; load low byte
+	stx tempB	; and store
+			; don't OR high byte, since we're in the first page
+	jmp +		; done
+bottom	ldx #<off_bot	; load low byte
+	stx tempB	; and store
+	ora #>off_bot	; OR high byte into arg
+	and #$7f	; drop high bit
++	sta tempB + 1	; store high byte
+
+	; get bank number
+	tya		; get entry.H back again
 	and #$03	; and extract the bank
+
 	jmp do_print	; tail call
 	.pend
 .send
