@@ -18,16 +18,16 @@
 ; 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 ;
 
-; Define new string array (double-null-terminated)
+; Define new string array (number of strings, followed by null-terminated
+; strings)
 ; args: string_name, bank, [string]
 strings	.segment
 \1_bank = \2
 	.section bank\2
-\1_addr	.null \3[0]
-	.for _cur = 1, _cur < len(\3), _cur = _cur + 1
+\1_addr	.byte len(\3)
+	.for _cur = 0, _cur < len(\3), _cur = _cur + 1
 	.null \3[_cur]
 	.next
-	.byte 0
 	.send
 	.endm
 
@@ -69,21 +69,27 @@ do_print .proc
 	tax		; copy bank to X
 	sta banknums,x	; switch bank, avoiding bus conflicts
 
+	; get number of lines
+	ldy #0		; initialize index
+	lda (addr),y	; load number of lines
+	tax		; put in X
+	iny		; increment index
+
 	; print line
 next	bit PPUSTATUS	; clear latch
 	lda nt_addr + 1	; load high byte
 	sta PPUADDR	; write it
 	lda nt_addr	; load low byte
 	sta PPUADDR	; write it
-	ldy #0		; initialize index
 	jmp +		; start loop
 -	sta PPUDATA	; store character
-	iny		; increment counter
+	iny		; increment index
 +	lda (addr),y	; load character
 	bne -		; continue until NUL
+	dex		; decrement lines remaining
 
 	; break if done
-	cpy #0		; did the string have 0 characters?
+	cpx #0		; are there any lines remaining?
 	beq done
 
 	; update string pointer
@@ -92,9 +98,9 @@ next	bit PPUSTATUS	; clear latch
 	adc addr	; add to string address
 	sta addr	; write it back
 	bcc +		; need to update high byte?
-	ldx addr + 1	; yes; load,
-	inx		; increment,
-	stx addr + 1	; and write back
+	ldy addr + 1	; yes; load,
+	iny		; increment,
+	sty addr + 1	; and write back
 
 	; update nametable pointer
 +	lda #32		; one full row == 32 bytes
@@ -102,11 +108,12 @@ next	bit PPUSTATUS	; clear latch
 	adc nt_addr	; add to nametable address
 	sta nt_addr	; write it back
 	bcc +		; need to update high byte?
-	ldx nt_addr + 1	; yes; load,
-	inx		; increment,
-	stx nt_addr + 1	; and write back
+	ldy nt_addr + 1	; yes; load,
+	iny		; increment,
+	sty nt_addr + 1	; and write back
 
-+	jmp next	; loop
++	ldy #0		; reset index
+	jmp next	; loop
 
 done	rts
 	.pend
