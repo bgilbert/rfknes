@@ -34,6 +34,7 @@ bank_size = 0
 nki_num = 0
 for nki in sys.stdin:
     lines = wrapper.wrap(nki)
+    assert len(lines) <= 5
 
     nki_size = sum(len(line) + 1 for line in lines) + 1
     if bank_size + nki_size > BANKSIZE:

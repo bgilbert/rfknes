@@ -86,10 +86,7 @@ irq	.proc
 ; X - high byte of nametable address; set high bit to draw at bottom
 ; tempA - NKI number
 print_nki .proc
-	off_top = 2 + 3 * 32
-	off_bot = 2 + 23 * 32
-
-	; get string address
+	; get string address and bank number
 	asl tempA	; get table offset by doubling nki_num: low
 	rol tempA + 1	; and high
 	.cp #<nki_table, tempB ; copy low byte of table base to tempB.L
@@ -107,24 +104,45 @@ print_nki .proc
 	lsr
 	ora #$80	; fix the top two bits
 	sta tempA + 1	; and store to tempA.H
+	tya		; get entry.H back again
+	and #$03	; and extract the bank
+	sta temp1	; save it
 
 	; load nametable address
+	tay		; copy bank to Y
+	sta banknums,y	; switch bank, avoiding bus conflicts
+	ldy #0		; index of line count in string
+	lda (tempA),y	; get number of lines
+	tay		; put in Y
 	txa		; move arg to A; test high bit
 	bmi bottom	; branch if drawing at bottom
-	ldx #<off_top	; load low byte
+	ldx #<nki_offset_top ; load low byte
 	stx tempB	; and store
-			; don't OR high byte, since we're in the first page
+	.cerror >nki_offset_top > 0 ; assume high byte is 0
 	jmp +		; done
-bottom	ldx #<off_bot	; load low byte
+bottom	ldx nki_off_lo - 1,y ; load low byte
 	stx tempB	; and store
-	ora #>off_bot	; OR high byte into arg
+	ora nki_off_hi - 1,y ; OR high byte into arg
 	and #$7f	; drop high bit
 +	sta tempB + 1	; store high byte
 
-	; get bank number
-	tya		; get entry.H back again
-	and #$03	; and extract the bank
-
+	lda temp1	; recover bank number
 	jmp do_print	; tail call
 	.pend
+
+nki_offset_top = 2 + 3 * 32
+nki_offset_bot = 2 + 22 * 32
+nki_off_lo
+	.byte <(nki_offset_bot + 32 * 4)
+	.byte <(nki_offset_bot + 32 * 3)
+	.byte <(nki_offset_bot + 32 * 2)
+	.byte <(nki_offset_bot + 32 * 1)
+	.byte <(nki_offset_bot + 32 * 0)
+nki_off_hi
+	.byte >(nki_offset_bot + 32 * 4)
+	.byte >(nki_offset_bot + 32 * 3)
+	.byte >(nki_offset_bot + 32 * 2)
+	.byte >(nki_offset_bot + 32 * 1)
+	.byte >(nki_offset_bot + 32 * 0)
+
 .send
