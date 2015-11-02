@@ -126,12 +126,90 @@ bottom	ldx nki_off_lo - 1,y ; load low byte
 	and #$7f	; drop high bit
 +	sta tempB + 1	; store high byte
 
-	lda temp1	; recover bank number
+	; draw top row of border
+	bit PPUSTATUS	; clear latch
+	.cp tempB + 1, PPUADDR ; write high byte
+	.cp tempB, PPUADDR ; write low byte
+	.cp #218, PPUDATA ; write top-left corner
+	lda #196	; load horizontal line
+	ldx #(nki_line_length - 2) ; initialize counter
+-	sta PPUDATA	; write it
+	dex		; decrement counter
+	bne -		; loop until done
+	.cp #191, PPUDATA ; write top-right corner
+
+	; draw bottom row of border
+	tya		; get number of rows
+	tax		; put in X
+	clc		; clear carry
+	lda #32		; load offset of top border from first line of text
+-	adc #32		; add offset for another row
+	dex		; decrement row count
+	bne -		; continue until no rows left
+	ldx tempB + 1	; load high byte of base
+	adc tempB	; add low byte of base
+	bcc +		; need to carry?
+	inx		; yes, carry
++	bit PPUSTATUS	; clear latch
+	stx PPUADDR	; write high byte
+	sta PPUADDR	; write low byte
+	.cp #192, PPUDATA ; write bottom-left corner
+	lda #196	; load horizontal line
+	ldx #(nki_line_length - 2) ; initialize counter
+-	sta PPUDATA	; write it
+	dex		; decrement counter
+	bne -		; loop until done
+	.cp #217, PPUDATA ; write bottom-right corner
+
+	; draw side borders
+	.cp #$84, PPUCTRL ; enable vertical stride
+	clc		; clear carry
+	ldx tempB + 1	; load high byte of base
+	lda tempB	; load low byte of base
+	adc #32		; add one row
+	bcc +		; need to carry?
+	inx		; yes, carry
++	bit PPUSTATUS	; clear latch
+	stx PPUADDR	; write high byte
+	sta PPUADDR	; write low byte
+	tya		; get line count
+	tax		; copy to X
+	lda #179	; load vertical line
+-	sta PPUDATA	; write line
+	dex		; decrement line count
+	bne -		; loop until done
+	clc		; clear carry
+	ldx tempB + 1	; load high byte of base
+	lda tempB	; load low byte of base
+	adc #(32 + nki_line_length - 1) ; add one row + width of a second
+	bcc +		; need to carry?
+	inx		; yes, carry
++	bit PPUSTATUS	; clear latch
+	stx PPUADDR	; write high byte
+	sta PPUADDR	; write low byte
+	lda #179	; load vertical line
+-	sta PPUDATA	; write line
+	dey		; decrement line count
+	bne -		; loop until done
+	.cp #$80, PPUCTRL ; disable vertical stride
+
+	; update nametable address for start of text
+	clc		; clear carry
+	lda tempB	; load low byte
+	adc #33		; add one line and one character
+	sta tempB	; write it back
+	bcc +		; check whether to update high byte
+	ldx tempB + 1	; yes; load
+	inx		; increment
+	stx tempB + 1	; store
+
++	lda temp1	; recover bank number
 	jmp do_print	; tail call
 	.pend
 
-nki_offset_top = 2 + 3 * 32
-nki_offset_bot = 2 + 22 * 32
+nki_line_length = 30
+nki_offset_top = 1 + 2 * 32
+nki_offset_bot = 1 + 21 * 32
 nki_off_lo
 	.byte <(nki_offset_bot + 32 * 4)
 	.byte <(nki_offset_bot + 32 * 3)
