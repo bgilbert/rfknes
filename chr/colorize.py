@@ -29,7 +29,7 @@ for i in range(256):
     x = i % 16
     y = i // 16
     coords = (x * 8, y * 8, (x + 1) * 8, (y + 1) * 8)
-    if i == ord('#'):
+    if i == ord('#') or i >= 176 and i < 224:
         color = (255, 0, 0)
     else:
         index = (x + y) % 2
