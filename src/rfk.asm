@@ -20,6 +20,7 @@
 
 .include "nes.asm"
 .include "string.asm"
+.include "nmi.asm"
 .include "../nki/nki.asm"
 .include "../chr/chr.asm"
 
@@ -58,24 +59,6 @@ main
 	beq -		; or loop
 	.cp #0, nmi_done ; clear nmi_done
 	jmp main	; NMI done; next iteration of main loop
-	.pend
-
-nmi	.proc
-	pha		; Push A
-	txa		; <- X
-	pha		; Push X
-	tya		; <- Y
-	pha		; Push Y
-
-	.cp #$1e, PPUMASK ; enable rendering
-	.cp #1, nmi_done ; report NMI complete
-
-	pla		; Pop Y
-	tay		; -> Y
-	pla		; Pop X
-	tax		; -> X
-	pla		; Pop A
-	rti
 	.pend
 
 irq	.proc
