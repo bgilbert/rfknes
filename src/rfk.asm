@@ -113,23 +113,21 @@ print_nki .proc
 	ldy #0		; index of line count in string
 	lda (tempA),y	; get number of lines
 	tay		; put in Y
+	bit PPUSTATUS	; clear latch
 	txa		; move arg to A; test high bit
 	bmi bottom	; branch if drawing at bottom
-	ldx #<nki_offset_top ; load low byte
-	stx tempB	; and store
 	.cerror >nki_offset_top > 0 ; assume high byte is 0
+	sta PPUADDR	; write high byte
+	.cp #<nki_offset_top, PPUADDR ; copy low byte
 	jmp +		; done
-bottom	ldx nki_off_lo - 1,y ; load low byte
-	stx tempB	; and store
-	ora nki_off_hi - 1,y ; OR high byte into arg
+bottom	ora nki_off_hi - 1,y ; OR high byte into arg
 	and #$7f	; drop high bit
-+	sta tempB + 1	; store high byte
-	bit PPUSTATUS	; clear latch
-	.cp tempB + 1, PPUADDR ; write high byte
-	.cp tempB, PPUADDR ; write low byte
+	sta PPUADDR	; write high byte
+	lda nki_off_lo - 1,y ; load low byte
+	sta PPUADDR	; write low byte
 
 	; draw top row of border
-	.cp #0, PPUDATA	; write space
++	.cp #0, PPUDATA	; write space
 	.cp #218, PPUDATA ; write top-left corner
 	lda #196	; load horizontal line
 	ldx #28		; initialize counter
