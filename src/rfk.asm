@@ -143,7 +143,6 @@ next	.cp #179, PPUDATA ; vertical line
 	iny		; increment index
 +	lda (tempA),y	; load character
 	bne -		; continue until NUL
-	dex		; decrement lines remaining
 	sty temp1	; save line length
 
 	; fill, draw trailer
@@ -162,14 +161,14 @@ next	.cp #179, PPUDATA ; vertical line
 	sta PPUDATA	; write twice
 	sta PPUDATA
 
-	; break if done
-	cpx #0		; are there any lines remaining?
-	beq footer
+	; decrement lines remaining; break if done
+	dex		; decrement
+	beq footer	; break if zero
 
 	; update string pointer
 	lda temp1	; get line length
-	adc tempA	; add to string address.  carry must be set to
-			; account for null byte; already set by cpx #0 above
+	sec		; set carry to account for null byte
+	adc tempA	; add to string address
 	sta tempA	; write it back
 	bcc next	; need to update high byte?
 	ldy tempA + 1	; yes; load,
