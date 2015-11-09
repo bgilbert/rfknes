@@ -44,8 +44,8 @@ start	.proc
 	bne -
 
 	; print NKI
+	.cp #$a0, temp1
 	.cp2 #690, tempA
-	ldx #$a0
 	jsr print_nki
 
 	; reset scroll after update
@@ -66,7 +66,7 @@ irq	.proc
 	.pend
 
 ; Print an NKI
-; X - high byte of nametable address; set high bit to draw at bottom
+; temp1 - high byte of nametable address; set high bit to draw at bottom
 ; tempA - NKI number
 print_nki .proc
 	; get string address and bank number
@@ -97,7 +97,7 @@ print_nki .proc
 	lda (tempA),y	; get number of lines
 	tay		; put in Y
 	bit PPUSTATUS	; clear latch
-	txa		; move arg to A; test high bit
+	lda temp1	; move combined arg to A; test high bit
 	bmi bottom	; branch if drawing at bottom
 	.cerror >nki_offset_top > 0 ; assume high byte is 0
 	sta PPUADDR	; write high byte
