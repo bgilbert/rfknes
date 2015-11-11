@@ -29,6 +29,7 @@
 nmi_ready	.byte ?
 cmd_ptr		.word ?
 ppu_addr	.word ?
+cur_nki		.word ?
 .send
 
 .section bss
@@ -39,6 +40,7 @@ cmd_buffer	.fill $100
 .section fixed
 start	.proc
 	.cp2 #cmd_buffer, cmd_ptr ; initialize command pointer
+	.cp2 #0, cur_nki ; initialize NKI number
 	.cp #$80, PPUCTRL ; configure PPU; enable NMI
 
 	; set up arbitrary palette
@@ -56,13 +58,29 @@ start	.proc
 	.ccmd #CMD_ENABLE_RENDER ; enable render
 	jsr resync_cmd_ptr ; resync
 
-	; print NKI
-	.cp #$a0, temp1
-	.cp2 #13, tempA
-	jsr print_nki
-
-main	jsr run_nmi	; wait for NMI
+main	jsr maybe_next_nki
+	jsr run_nmi	; wait for NMI
 	jmp main	; continue main loop
+	.pend
+
+maybe_next_nki .proc
+	jsr input	; query buttons
+	lda new_buttons	; get result
+	bne +		; button pressed?
+	rts		; no, return
+
++	ldx cur_nki	; load nki.L
+	inx		; increment
+	stx cur_nki	; store
+	stx tempA	; store argument
+	ldy cur_nki + 1	; load nki.H
+	cpx #0		; need to carry?
+	bne +		; branch unless carrying
+	iny		; carry
+	sty cur_nki + 1	; store
++	sty tempA + 1	; store argument
+	.cp #$a0, temp1	; draw at bottom
+	jmp print_nki	; draw
 	.pend
 
 ; Tell NMI handler we're ready, then wait for it to complete

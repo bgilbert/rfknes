@@ -80,6 +80,8 @@ tempA	.word ?
 tempB	.word ?
 tempC	.word ?
 tempD	.word ?
+buttons		.byte ?
+new_buttons	.byte ?
 .dsection zeropage
 .cerror	* > $100
 .here
@@ -160,6 +162,31 @@ reset	.proc
 	bpl -		; loop until set
 
 	jmp start
+	.pend
+
+; Read controller 1.
+; MSB->LSB: A, B, Select, Start, Up, Down, Left, Right.
+;
+; Set:
+; buttons - buttons currently down
+; new_buttons - newly-pressed buttons
+input	.proc
+	.cp #1, $4016	; strobe controller
+	.cp #0, $4016	; stop strobing
+	ldx #8		; initialize bit counter
+-	lda $4016	; load bit from controller
+	ror		; move into carry
+	rol new_buttons	; and rotate into new_buttons
+	dex		; decrement bit counter
+	bne -		; loop until done
+
+	ldx new_buttons	; get current buttons
+	lda buttons	; and previous ones
+	eor #$ff	; complement previous buttons
+	and new_buttons	; and compute which ones have changed
+	sta new_buttons	; record them
+	stx buttons	; store current buttons
+	rts
 	.pend
 
 ; Copy value to location, clobbering A
