@@ -79,8 +79,7 @@ cmd_dispatch .proc
 nmi_enable_render .proc
 	.cp #$1e, PPUMASK ; enable rendering
 	ldy #1		; size of command
-	jsr resync_cmd_ptr
-	rts
+	jmp resync_cmd_ptr
 	.pend
 
 nmi_draw_buf .proc
@@ -144,9 +143,7 @@ nmi_draw_buf .proc
 	bne -		; repeat until done
 
 	; point cmd_ptr after buffer
-done	jsr resync_cmd_ptr
-
-	rts
+done	jmp resync_cmd_ptr
 	.pend
 
 .send

@@ -227,9 +227,7 @@ next	lda temp1	; get line length
 	.ccmd #0	; write space
 
 	 ; update cmd_ptr
-	jsr resync_cmd_ptr
-
-	rts
+	jmp resync_cmd_ptr
 	.pend
 
 nki_offset_top = 2 * 32
