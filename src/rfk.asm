@@ -58,7 +58,7 @@ start	.proc
 
 	; print NKI
 	.cp #$a0, temp1
-	.cp2 #690, tempA
+	.cp2 #13, tempA
 	jsr print_nki
 
 main	jsr run_nmi	; wait for NMI
@@ -66,6 +66,7 @@ main	jsr run_nmi	; wait for NMI
 	.pend
 
 ; Tell NMI handler we're ready, then wait for it to complete
+; Clobbers: A, Y
 run_nmi .proc
 	; terminate buffer
 	ldy #0		; buffer index
@@ -255,10 +256,13 @@ write_draw_buf_header .proc
 	rts
 	.pend
 
-; Increment ppu_addr by 32 and write a DRAW_BUF header for one line
+; Resync cmd_ptr, wait for VBLANK, increment ppu_addr by 32, and write
+; a DRAW_BUF header for one line
 ; Y [in/out] - offset into cmd_ptr
 ; Clobbers: A, X
 next_line .proc
+	jsr resync_cmd_ptr ; resync cmd_ptr
+	jsr run_nmi	; wait for frame
 	lda ppu_addr	; nametable base (low byte)
 	clc		; clear carry
 	adc #32		; add one line
@@ -268,6 +272,7 @@ next_line .proc
 	inx		; increment
 	stx ppu_addr + 1 ; store
 +	ldx #32		; one line
+	ldy #0		; reset cmd_buffer offset
 	bpl write_draw_buf_header ; write the header
 	.pend
 
