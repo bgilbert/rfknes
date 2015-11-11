@@ -191,9 +191,7 @@ next	lda temp1	; get line length
 	adc tempA	; add to string address
 	sta tempA	; write it back
 	bcc +		; need to update high byte?
-	ldx tempA + 1	; yes; load,
-	inx		; increment,
-	stx tempA + 1	; store
+	inc tempA + 1	; yes
 
 	; print line
 +	jsr next_line	; write header
@@ -286,9 +284,7 @@ next_line .proc
 	adc #32		; add one line
 	sta ppu_addr	; write back
 	bcc +		; need to carry?
-	ldx ppu_addr + 1 ; yes; load
-	inx		; increment
-	stx ppu_addr + 1 ; store
+	inc ppu_addr + 1 ; yes
 +	ldx #32		; one line
 	ldy #0		; reset cmd_buffer offset
 	bpl write_draw_buf_header ; write the header

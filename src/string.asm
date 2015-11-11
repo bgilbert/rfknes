@@ -96,9 +96,7 @@ next	bit PPUSTATUS	; clear latch
 			; account for null byte; already set by cpx #0 above
 	sta addr	; write it back
 	bcc +		; need to update high byte?
-	ldy addr + 1	; yes; load,
-	iny		; increment,
-	sty addr + 1	; and write back
+	inc addr + 1	; yes
 
 	; update nametable pointer
 +	lda #32		; one full row == 32 bytes
@@ -106,9 +104,7 @@ next	bit PPUSTATUS	; clear latch
 	adc nt_addr	; add to nametable address
 	sta nt_addr	; write it back
 	bcc +		; need to update high byte?
-	ldy nt_addr + 1	; yes; load,
-	iny		; increment,
-	sty nt_addr + 1	; and write back
+	inc nt_addr + 1	; yes
 
 +	ldy #0		; reset index
 	jmp next	; loop
