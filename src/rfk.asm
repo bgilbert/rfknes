@@ -133,7 +133,7 @@ print_nki .proc
 	tay		; copy to Y
 	sta banknums,y	; switch bank, avoiding bus conflicts
 
-	; store command
+	; calculate PPU address
 	ldy #0		; index of line count in string
 	lda (tempA),y	; get number of lines
 	sta temp2	; put in temp2
@@ -149,18 +149,10 @@ bottom	ora nki_off_hi - 1,x ; OR high byte into arg
 	sta ppu_addr + 1; write high byte
 	lda nki_off_lo - 1,x ; load low byte
 	sta ppu_addr	; write low byte
-+	txa		; retrieve number of lines
-	clc		; clear carry
-	adc #2		; add top and bottom borders
-	asl		; multiply by 32
-	asl
-	asl
-	asl
-	asl
-	tax		; put in X
-	jsr write_draw_buf_header ; write header
 
 	; draw top row of border
++	ldx #32		; one line
+	jsr write_draw_buf_header ; write header
 	.ccmd #0	; write space
 	.ccmd #218	; write top-left corner
 	lda #196	; load horizontal line
@@ -185,7 +177,8 @@ next	lda temp1	; get line length
 	stx tempA + 1	; store
 
 	; print line
-+	.ccmd #0	; write space
++	jsr next_line	; write header
+	.ccmd #0	; write space
 	.ccmd #179	; vertical line
 	jsr resync_cmd_ptr ; update cmd_ptr
 	ldy #0		; first char of string, first byte of cmd_ptr
@@ -216,6 +209,7 @@ next	lda temp1	; get line length
 	bne next	; loop until zero
 
 	; draw line footer
+	jsr next_line	; write header
 	.ccmd #0	; write space
 	.ccmd #192	; write bottom-left corner
 	lda #196	; load horizontal line
@@ -245,6 +239,7 @@ nki_off_hi
 	.byte >(nki_offset_bot + 32 * 1)
 	.byte >(nki_offset_bot + 32 * 0)
 
+; Write a DRAW_BUF header
 ; X - number of characters
 ; Y [in/out] - offset into cmd_ptr
 ; ppu_addr - starting PPU address
@@ -258,6 +253,22 @@ write_draw_buf_header .proc
 	txa		; get count
 	.cmd		; write it
 	rts
+	.pend
+
+; Increment ppu_addr by 32 and write a DRAW_BUF header for one line
+; Y [in/out] - offset into cmd_ptr
+; Clobbers: A, X
+next_line .proc
+	lda ppu_addr	; nametable base (low byte)
+	clc		; clear carry
+	adc #32		; add one line
+	sta ppu_addr	; write back
+	bcc +		; need to carry?
+	ldx ppu_addr + 1 ; yes; load
+	inx		; increment
+	stx ppu_addr + 1 ; store
++	ldx #32		; one line
+	bpl write_draw_buf_header ; write the header
 	.pend
 
 .send
