@@ -97,11 +97,8 @@ irq	.proc
 ; Return:
 ; tempA - the NKI
 rand_nki .proc
-	next_power_of_two = 1024
-	.cerror nki_count > next_power_of_two
-
 again	jsr rand	; randomize high byte
-	and #>(next_power_of_two - 1) ; mask off high bits
+	and #>(nki_next_power_of_two - 1) ; mask off high bits
 	sta tempA + 1	; store high byte
 	cmp #>(nki_count - 1) ; compare to max index
 	beq hard	; branch if outcome uncertain

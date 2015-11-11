@@ -49,6 +49,7 @@ for nki in sys.stdin:
     bank_size += nki_size
 
 print('\nnki_count = {}'.format(nki_num))
+print('nki_next_power_of_two = {}'.format(1 << nki_num.bit_length()))
 
 print('\n.section fixed')
 print('nki_table')
