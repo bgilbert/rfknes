@@ -24,10 +24,6 @@ CMD_ENABLE_RENDER	= 1	; no args
 CMD_DRAW_BUF		= 2	; nametable base (2, high byte first),
 				; count (1), data
 
-.section zeropage
-nmi_cmd_ptr	.word ?
-.send
-
 .section fixed
 nmi_table
 	.word nmi_enable_render - 1
@@ -46,11 +42,11 @@ nmi	.proc
 	.cp #0, nmi_ready ; clear ready flag
 
 	; walk command buffer
-	.cp2 #cmd_buffer, nmi_cmd_ptr ; initialize command ptr
+	.cp2 #cmd_buffer, cmd_ptr ; initialize command ptr
 	bne +		; start loop
 -	jsr cmd_dispatch; dispatch
 +	ldy #0		; load offset into buffer
-	lda (nmi_cmd_ptr),y ; get command
+	lda (cmd_ptr),y	; get command
 	bne -		; continue until command 0
 
 	; reset scroll after update
@@ -83,7 +79,7 @@ cmd_dispatch .proc
 nmi_enable_render .proc
 	.cp #$1e, PPUMASK ; enable rendering
 	ldy #1		; size of command
-	jsr resync_nmi_cmd_ptr
+	jsr resync_cmd_ptr
 	rts
 	.pend
 
@@ -91,21 +87,21 @@ nmi_draw_buf .proc
 	; set nametable address
 	bit PPUSTATUS	; clear address latch
 	ldy #1		; cmd ptr offset
-	lda (nmi_cmd_ptr),y ; get nametable.H
+	lda (cmd_ptr),y	; get nametable.H
 	sta PPUADDR	; write it
 	iny		; increment offset
-	lda (nmi_cmd_ptr),y ; get nametable.L
+	lda (cmd_ptr),y	; get nametable.L
 	sta PPUADDR	; write it
 	iny		; increment offset
 
 	; get counter
-	lda (nmi_cmd_ptr),y ; get counter
+	lda (cmd_ptr),y	; get counter
 	tax		; put in X
 	iny		; increment offset
 
 	; write data until multiple of 8 bytes remaining
 	bpl +		; start loop
--	lda (nmi_cmd_ptr),y ; load byte
+-	lda (cmd_ptr),y	; load byte
 	sta PPUDATA	; write it
 	dex		; decrement remaining count
 	iny		; increment offset
@@ -120,51 +116,36 @@ nmi_draw_buf .proc
 	lsr
 	lsr
 	tax		; and put it back
--	lda (nmi_cmd_ptr),y ; load byte 1
+-	lda (cmd_ptr),y	; load byte 1
 	sta PPUDATA	; write it
 	iny		; increment offset
-	lda (nmi_cmd_ptr),y ; load byte 2
+	lda (cmd_ptr),y	; load byte 2
 	sta PPUDATA	; write it
 	iny		; increment offset
-	lda (nmi_cmd_ptr),y ; load byte 3
+	lda (cmd_ptr),y	; load byte 3
 	sta PPUDATA	; write it
 	iny		; increment offset
-	lda (nmi_cmd_ptr),y ; load byte 4
+	lda (cmd_ptr),y	; load byte 4
 	sta PPUDATA	; write it
 	iny		; increment offset
-	lda (nmi_cmd_ptr),y ; load byte 5
+	lda (cmd_ptr),y	; load byte 5
 	sta PPUDATA	; write it
 	iny		; increment offset
-	lda (nmi_cmd_ptr),y ; load byte 6
+	lda (cmd_ptr),y	; load byte 6
 	sta PPUDATA	; write it
 	iny		; increment offset
-	lda (nmi_cmd_ptr),y ; load byte 7
+	lda (cmd_ptr),y	; load byte 7
 	sta PPUDATA	; write it
 	iny		; increment offset
-	lda (nmi_cmd_ptr),y ; load byte 8
+	lda (cmd_ptr),y	; load byte 8
 	sta PPUDATA	; write it
 	iny		; increment offset
 	dex		; decrement count of remaining blocks
 	bne -		; repeat until done
 
-	; point nmi_cmd_ptr after buffer
-done	jsr resync_nmi_cmd_ptr
+	; point cmd_ptr after buffer
+done	jsr resync_cmd_ptr
 
-	rts
-	.pend
-
-; Add Y to nmi_cmd_ptr
-; clobbers: A
-resync_nmi_cmd_ptr .proc
-	tya		; get offset into cmd_ptr
-	clc		; clear carry
-	adc nmi_cmd_ptr	; add to pointer
-	sta nmi_cmd_ptr	; and write back
-	bcs +		; need to increment high byte?
-	rts		; no
-+	lda #0		; load zero
-	adc nmi_cmd_ptr + 1 ; add high byte and carry flag
-	sta nmi_cmd_ptr + 1 ; store
 	rts
 	.pend
 
