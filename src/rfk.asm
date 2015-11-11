@@ -28,6 +28,7 @@
 ; Persistent state
 nmi_ready	.byte ?
 cmd_ptr		.word ?
+ppu_addr	.word ?
 .send
 
 .section bss
@@ -137,18 +138,17 @@ print_nki .proc
 	lda (tempA),y	; get number of lines
 	sta temp2	; put in temp2
 	tax		; and X
-	.ccmd #CMD_DRAW_BUF ; write draw command
 	lda temp1	; move combined arg to A; test high bit
 	bmi bottom	; branch if drawing at bottom
 	.cerror >nki_offset_top > 0 ; assume high byte is 0
-	.cmd		; write high byte
-	.ccmd #<nki_offset_top ; copy low byte
+	sta ppu_addr + 1; write high byte
+	.cp #<nki_offset_top, ppu_addr ; copy low byte
 	jmp +		; done
 bottom	ora nki_off_hi - 1,x ; OR high byte into arg
 	and #$7f	; drop high bit
-	.cmd		; write high byte
+	sta ppu_addr + 1; write high byte
 	lda nki_off_lo - 1,x ; load low byte
-	.cmd		; write low byte
+	sta ppu_addr	; write low byte
 +	txa		; retrieve number of lines
 	clc		; clear carry
 	adc #2		; add top and bottom borders
@@ -157,7 +157,8 @@ bottom	ora nki_off_hi - 1,x ; OR high byte into arg
 	asl
 	asl
 	asl
-	.cmd		; write count
+	tax		; put in X
+	jsr write_draw_buf_header ; write header
 
 	; draw top row of border and header of first line
 	.ccmd #0	; write space
@@ -260,5 +261,20 @@ nki_off_hi
 	.byte >(nki_offset_bot + 32 * 2)
 	.byte >(nki_offset_bot + 32 * 1)
 	.byte >(nki_offset_bot + 32 * 0)
+
+; X - number of characters
+; Y [in/out] - offset into cmd_ptr
+; ppu_addr - starting PPU address
+; Clobbers: A
+write_draw_buf_header .proc
+	.ccmd #CMD_DRAW_BUF ; write draw command
+	lda ppu_addr + 1 ; nametable base (high byte)
+	.cmd		; write it
+	lda ppu_addr	; nametable base (low byte)
+	.cmd		; write it
+	txa		; get count
+	.cmd		; write it
+	rts
+	.pend
 
 .send
