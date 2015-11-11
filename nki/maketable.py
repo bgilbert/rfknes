@@ -48,8 +48,9 @@ for nki in sys.stdin:
     nki_num += 1
     bank_size += nki_size
 
+print('\nnki_count = {}'.format(nki_num))
+
 print('\n.section fixed')
-print('nki_count .word {}'.format(nki_num))
 print('nki_table')
 for i in range(nki_num):
     print('\t.stringentry nki_{}'.format(i))

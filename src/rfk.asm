@@ -29,7 +29,7 @@
 nmi_ready	.byte ?
 cmd_ptr		.word ?
 ppu_addr	.word ?
-cur_nki		.word ?
+rand_state	.word ?
 .send
 
 .section bss
@@ -40,7 +40,7 @@ cmd_buffer	.fill $100
 .section fixed
 start	.proc
 	.cp2 #cmd_buffer, cmd_ptr ; initialize command pointer
-	.cp2 #0, cur_nki ; initialize NKI number
+	.cp2 #$c292, rand_state ; initialize random state
 	.cp #$80, PPUCTRL ; configure PPU; enable NMI
 
 	; set up arbitrary palette
@@ -69,16 +69,7 @@ maybe_next_nki .proc
 	bne +		; button pressed?
 	rts		; no, return
 
-+	ldx cur_nki	; load nki.L
-	inx		; increment
-	stx cur_nki	; store
-	stx tempA	; store argument
-	ldy cur_nki + 1	; load nki.H
-	cpx #0		; need to carry?
-	bne +		; branch unless carrying
-	iny		; carry
-	sty cur_nki + 1	; store
-+	sty tempA + 1	; store argument
++	jsr rand_nki	; get random NKI
 	.cp #$a0, temp1	; draw at bottom
 	jmp print_nki	; draw
 	.pend
@@ -100,6 +91,50 @@ run_nmi .proc
 
 irq	.proc
 	rti
+	.pend
+
+; Pick a random NKI
+; Return:
+; tempA - the NKI
+rand_nki .proc
+	next_power_of_two = 1024
+	.cerror nki_count > next_power_of_two
+
+again	jsr rand	; randomize high byte
+	and #>(next_power_of_two - 1) ; mask off high bits
+	sta tempA + 1	; store high byte
+	cmp #>(nki_count - 1) ; compare to max index
+	beq hard	; branch if outcome uncertain
+	bpl again	; high byte too large?  try again
+	jsr rand	; randomize low byte
+	sta tempA	; store low byte
+	rts
+
+hard	jsr rand	; randomize low byte
+	cmp #<(nki_count - 1) ; compare to max index
+	beq +		; equal; we're safe
+	bpl again	; greater; try again
++	sta tempA	; store low byte
+	rts
+	.pend
+
+; Generate "random" number
+; 16-bit Galois LFSR; polynomial fc00
+; Return: number in A
+rand	.proc
+	lda rand_state + 1 ; load high byte of state
+	ldx #8		; initialize round counter
+
+-	lsr		; shift high byte
+	ror rand_state	; shift low byte
+	bcc +		; see if output bit is 1
+	eor #$fc	; yes, so xor poly
++	dex		; decrement round counter
+	bne -		; continue if not done
+
+	sta rand_state + 1 ; update high byte
+	lda rand_state	; return low byte
+	rts
 	.pend
 
 ; Store A to command buffer indexed by Y; increment Y
