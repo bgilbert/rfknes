@@ -160,7 +160,7 @@ bottom	ora nki_off_hi - 1,x ; OR high byte into arg
 	tax		; put in X
 	jsr write_draw_buf_header ; write header
 
-	; draw top row of border and header of first line
+	; draw top row of border
 	.ccmd #0	; write space
 	.ccmd #218	; write top-left corner
 	lda #196	; load horizontal line
@@ -169,23 +169,22 @@ bottom	ora nki_off_hi - 1,x ; OR high byte into arg
 	dex		; decrement counter
 	bne -		; loop until done
 	.ccmd #191	; write top-right corner
-	lda #0		; load space
-	.cmd		; write twice
-	.cmd
-	.ccmd #179	; vertical line
+	.ccmd #0	; write space
 
-	; set up addresses
-	jsr resync_cmd_ptr ; update cmd_ptr
-	ldy tempA	; low byte of string address
-	iny		; increment for line count
-	sty tempA	; store
+	; increment string address for line count
+	ldx tempA	; low byte of string address
+	inx		; increment
+	stx tempA	; store
 	bne next	; need to increment high byte?
-	ldy tempA + 1	; yes; load,
-	iny		; increment,
-	sty tempA + 1	; store
+	ldx tempA + 1	; yes; load,
+	inx		; increment,
+	stx tempA + 1	; store
 
 	; print line
-next	ldy #0		; first char of string, first byte of cmd_ptr
+next	.ccmd #0	; write space
+	.ccmd #179	; vertical line
+	jsr resync_cmd_ptr ; update cmd_ptr
+	ldy #0		; first char of string, first byte of cmd_ptr
 	bpl +		; start loop
 -	.cmd		; store character; increment index
 +	lda (tempA),y	; load character
@@ -204,9 +203,7 @@ next	ldy #0		; first char of string, first byte of cmd_ptr
 	dex		; decrement count
 	bne -		; loop until done
 +	.ccmd #179	; vertical line
-	lda #0		; load space
-	.cmd		; write twice
-	.cmd
+	.ccmd #0	; write space
 
 	; decrement lines remaining; break if done
 	ldx temp2	; get lines remaining
@@ -214,25 +211,20 @@ next	ldy #0		; first char of string, first byte of cmd_ptr
 	beq footer	; break if zero
 	stx temp2	; store back
 
-	; draw prefix for next line
-	.ccmd #179	; vertical line
-
-	; update cmd_ptr
-	jsr resync_cmd_ptr
-
 	; update string pointer
 	lda temp1	; get line length
 	sec		; set carry to account for null byte
 	adc tempA	; add to string address
 	sta tempA	; write it back
 	bcc next	; need to update high byte?
-	ldy tempA + 1	; yes; load,
-	iny		; increment,
-	sty tempA + 1	; and write back
+	ldx tempA + 1	; yes; load,
+	inx		; increment,
+	stx tempA + 1	; and write back
 	jmp next	; loop
 
 	; draw line footer
-footer	.ccmd #192	; write bottom-left corner
+footer	.ccmd #0	; write space
+	.ccmd #192	; write bottom-left corner
 	lda #196	; load horizontal line
 	ldx #28		; initialize counter
 -	.cmd		; write it
