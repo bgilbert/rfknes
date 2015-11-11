@@ -171,17 +171,21 @@ bottom	ora nki_off_hi - 1,x ; OR high byte into arg
 	.ccmd #191	; write top-right corner
 	.ccmd #0	; write space
 
-	; increment string address for line count
-	ldx tempA	; low byte of string address
-	inx		; increment
-	stx tempA	; store
-	bne next	; need to increment high byte?
+	; prepare to increment string address for line count
+	.cp #0, temp1	; increment by one character
+
+	; update string pointer
+next	lda temp1	; get line length
+	sec		; set carry to account for null byte
+	adc tempA	; add to string address
+	sta tempA	; write it back
+	bcc +		; need to update high byte?
 	ldx tempA + 1	; yes; load,
 	inx		; increment,
 	stx tempA + 1	; store
 
 	; print line
-next	.ccmd #0	; write space
++	.ccmd #0	; write space
 	.ccmd #179	; vertical line
 	jsr resync_cmd_ptr ; update cmd_ptr
 	ldy #0		; first char of string, first byte of cmd_ptr
@@ -208,22 +212,11 @@ next	.ccmd #0	; write space
 	; decrement lines remaining; break if done
 	ldx temp2	; get lines remaining
 	dex		; decrement
-	beq footer	; break if zero
 	stx temp2	; store back
-
-	; update string pointer
-	lda temp1	; get line length
-	sec		; set carry to account for null byte
-	adc tempA	; add to string address
-	sta tempA	; write it back
-	bcc next	; need to update high byte?
-	ldx tempA + 1	; yes; load,
-	inx		; increment,
-	stx tempA + 1	; and write back
-	jmp next	; loop
+	bne next	; loop until zero
 
 	; draw line footer
-footer	.ccmd #0	; write space
+	.ccmd #0	; write space
 	.ccmd #192	; write bottom-left corner
 	lda #196	; load horizontal line
 	ldx #28		; initialize counter
