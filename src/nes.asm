@@ -80,7 +80,11 @@ tempB	.word ?
 tempC	.word ?
 tempD	.word ?
 .dsection zeropage
-.cerror	* > $200
+.cerror	* > $100
+.here
+.logical $200
+.dsection bss
+.cerror * > $7ff
 .here
 
 * =		prg_end		; don't include BSS in output

@@ -26,11 +26,17 @@
 
 .section zeropage
 ; Persistent state
-nmi_done	.byte ?
+nmi_ready	.byte ?
+cmd_ptr		.word ?
+.send
+
+.section bss
+cmd_buffer	.fill $200
 .send
 
 .section fixed
 start	.proc
+	.cp2 #cmd_buffer, cmd_ptr ; initialize command pointer
 	.cp #$80, PPUCTRL ; configure PPU; enable NMI
 
 	; set up arbitrary palette
@@ -43,26 +49,64 @@ start	.proc
 	cpx #$30
 	bne -
 
+	; enable render
+	ldy #0		; buffer index
+	.ccmd #CMD_ENABLE_RENDER ; enable render
+	jsr resync_cmd_ptr ; resync
+
 	; print NKI
 	.cp #$a0, temp1
 	.cp2 #690, tempA
 	jsr print_nki
 
-	; reset scroll after update
-	bit PPUSTATUS	; clear address latch
-	lda #0
-	sta PPUSCROLL
-	sta PPUSCROLL
+main	jsr run_nmi	; wait for NMI
+	jmp main	; continue main loop
+	.pend
 
-main
--	lda nmi_done	; wait until after NMI
-	beq -		; or loop
-	.cp #0, nmi_done ; clear nmi_done
-	jmp main	; NMI done; next iteration of main loop
+; Tell NMI handler we're ready, then wait for it to complete
+run_nmi .proc
+	; terminate buffer
+	ldy #0		; buffer index
+	.ccmd #CMD_EOF	; write command
+
+	; enable NMI and wait for it
+	.cp #1, nmi_ready ; tell NMI handler to proceed
+-	lda nmi_ready	; wait until after NMI
+	bne -		; or loop
+	.cp2 #cmd_buffer, cmd_ptr ; reset buffer pointer
+	rts
 	.pend
 
 irq	.proc
 	rti
+	.pend
+
+; Store A to command buffer indexed by Y; increment Y
+cmd	.macro
+	sta (cmd_ptr),y
+	iny
+	.endm
+
+; Copy value to command buffer indexed by Y; increment Y
+; args: value
+ccmd	.macro
+	lda \1
+	.cmd
+	.endm
+
+; Add Y to cmd_ptr
+; clobbers: A
+resync_cmd_ptr .proc
+	tya		; get offset into cmd_ptr
+	clc		; clear carry
+	adc cmd_ptr	; add to pointer
+	sta cmd_ptr	; and write back
+	bcs +		; need to increment high byte?
+	rts		; no
++	lda #0		; yes; load zero
+	adc cmd_ptr + 1	; add high byte and carry flag
+	sta cmd_ptr + 1	; store
+	rts
 	.pend
 
 ; Print an NKI
@@ -92,40 +136,50 @@ print_nki .proc
 	tay		; copy to Y
 	sta banknums,y	; switch bank, avoiding bus conflicts
 
-	; seek nametable to address
+	; store command
 	ldy #0		; index of line count in string
 	lda (tempA),y	; get number of lines
-	tay		; put in Y
-	bit PPUSTATUS	; clear latch
+	sta temp2	; put in temp2
+	tax		; and X
+	.ccmd #CMD_DRAW_BUF ; write draw command
 	lda temp1	; move combined arg to A; test high bit
 	bmi bottom	; branch if drawing at bottom
 	.cerror >nki_offset_top > 0 ; assume high byte is 0
-	sta PPUADDR	; write high byte
-	.cp #<nki_offset_top, PPUADDR ; copy low byte
+	.cmd		; write high byte
+	.ccmd #<nki_offset_top ; copy low byte
 	jmp +		; done
-bottom	ora nki_off_hi - 1,y ; OR high byte into arg
+bottom	ora nki_off_hi - 1,x ; OR high byte into arg
 	and #$7f	; drop high bit
-	sta PPUADDR	; write high byte
-	lda nki_off_lo - 1,y ; load low byte
-	sta PPUADDR	; write low byte
+	.cmd		; write high byte
+	lda nki_off_lo - 1,x ; load low byte
+	.cmd		; write low byte
++	txa		; retrieve number of lines
+	clc		; clear carry
+	adc #2		; add top and bottom borders
+	asl		; multiply by 32
+	asl
+	asl
+	asl
+	asl
+	.cmd		; write count
 
-	; draw top row of border
-+	.cp #0, PPUDATA	; write space
-	.cp #218, PPUDATA ; write top-left corner
+	; draw top row of border and header of first line
+	.ccmd #0	; write space
+	.ccmd #218	; write top-left corner
 	lda #196	; load horizontal line
 	ldx #28		; initialize counter
--	sta PPUDATA	; write line
+-	.cmd		; write line
 	dex		; decrement counter
 	bne -		; loop until done
-	.cp #191, PPUDATA ; write top-right corner
+	.ccmd #191	; write top-right corner
 	lda #0		; load space
-	sta PPUDATA	; write twice
-	sta PPUDATA
+	.cmd		; write twice
+	.cmd
+	.ccmd #179	; vertical line
 
-	; set up indexes
-	tya		; get number of lines
-	tax		; put into X
-	ldy tempA	; low byte of address
+	; set up addresses
+	jsr resync_cmd_ptr ; update cmd_ptr
+	ldy tempA	; low byte of string address
 	iny		; increment for line count
 	sty tempA	; store
 	bne next	; need to increment high byte?
@@ -133,14 +187,10 @@ bottom	ora nki_off_hi - 1,y ; OR high byte into arg
 	iny		; increment,
 	sty tempA + 1	; store
 
-	; draw line header
-next	.cp #179, PPUDATA ; vertical line
-
 	; print line
-	ldy #0		; point to first char of string
+next	ldy #0		; first char of string, first byte of cmd_ptr
 	jmp +		; start loop
--	sta PPUDATA	; store character
-	iny		; increment index
+-	.cmd		; store character; increment index
 +	lda (tempA),y	; load character
 	bne -		; continue until NUL
 	sty temp1	; save line length
@@ -151,19 +201,27 @@ next	.cp #179, PPUDATA ; vertical line
 	clc		; clear carry
 	adc #29		; add max characters per line, plus 1 for negation
 	beq +		; skip fill if line is full-width
-	tay		; move fill count to Y
+	tax		; move fill count to X
 	lda #0		; load space
--	sta PPUDATA	; write space
-	dey		; decrement count
+-	.cmd		; write space
+	dex		; decrement count
 	bne -		; loop until done
-+	.cp #179, PPUDATA ; vertical line
++	.ccmd #179	; vertical line
 	lda #0		; load space
-	sta PPUDATA	; write twice
-	sta PPUDATA
+	.cmd		; write twice
+	.cmd
 
 	; decrement lines remaining; break if done
+	ldx temp2	; get lines remaining
 	dex		; decrement
 	beq footer	; break if zero
+	stx temp2	; store back
+
+	; draw prefix for next line
+	.ccmd #179	; vertical line
+
+	; update cmd_ptr
+	jsr resync_cmd_ptr
 
 	; update string pointer
 	lda temp1	; get line length
@@ -177,14 +235,17 @@ next	.cp #179, PPUDATA ; vertical line
 	jmp next	; loop
 
 	; draw line footer
-footer	.cp #192, PPUDATA ; write bottom-left corner
+footer	.ccmd #192	; write bottom-left corner
 	lda #196	; load horizontal line
-	ldy #28		; initialize counter
--	sta PPUDATA	; write it
-	dey		; decrement counter
+	ldx #28		; initialize counter
+-	.cmd		; write it
+	dex		; decrement counter
 	bne -		; loop until done
-	.cp #217, PPUDATA ; write bottom-right corner
-	.cp #0, PPUDATA	; write space
+	.ccmd #217	; write bottom-right corner
+	.ccmd #0	; write space
+
+	 ; update cmd_ptr
+	jsr resync_cmd_ptr
 
 	rts
 	.pend
