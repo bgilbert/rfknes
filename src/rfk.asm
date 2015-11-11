@@ -189,7 +189,7 @@ bottom	ora nki_off_hi - 1,x ; OR high byte into arg
 
 	; print line
 next	ldy #0		; first char of string, first byte of cmd_ptr
-	jmp +		; start loop
+	bpl +		; start loop
 -	.cmd		; store character; increment index
 +	lda (tempA),y	; load character
 	bne -		; continue until NUL
