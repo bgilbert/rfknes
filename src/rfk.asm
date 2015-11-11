@@ -31,7 +31,8 @@ cmd_ptr		.word ?
 .send
 
 .section bss
-cmd_buffer	.fill $200
+.cerror * % 256 != 0, "Buffer not page-aligned"
+cmd_buffer	.fill $100
 .send
 
 .section fixed
@@ -101,11 +102,6 @@ resync_cmd_ptr .proc
 	clc		; clear carry
 	adc cmd_ptr	; add to pointer
 	sta cmd_ptr	; and write back
-	bcs +		; need to increment high byte?
-	rts		; no
-+	lda #0		; yes; load zero
-	adc cmd_ptr + 1	; add high byte and carry flag
-	sta cmd_ptr + 1	; store
 	rts
 	.pend
 
