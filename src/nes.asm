@@ -58,6 +58,7 @@ prg_start =	*
 .logical $c000
 .dsection fixed
 banknums .byte range(prg_banks)	; for avoiding bus conflicts in bank swaps
+.warn	"Code size: ", (* - $c000), " bytes"
 * =	$fffa
 .word	(nmi, reset, irq)
 .cerror	* != 0, "Incorrect fixed bank size"
