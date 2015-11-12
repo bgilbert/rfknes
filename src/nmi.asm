@@ -21,13 +21,13 @@
 ; NMI commands
 CMD_EOF			= 0	; no args
 CMD_ENABLE_RENDER	= 1	; no args
-CMD_DRAW_BUF		= 2	; nametable base (2, high byte first),
+CMD_COPY		= 2	; PPU address (2, high byte first),
 				; count (1), data
 
 .section fixed
 nmi_table
 	.word nmi_enable_render - 1
-	.word nmi_draw_buf - 1
+	.word nmi_copy - 1
 
 nmi	.proc
 	pha		; push A
@@ -82,7 +82,7 @@ nmi_enable_render .proc
 	jmp resync_cmd_ptr
 	.pend
 
-nmi_draw_buf .proc
+nmi_copy .proc
 	; set nametable address
 	bit PPUSTATUS	; clear address latch
 	ldy #1		; cmd ptr offset

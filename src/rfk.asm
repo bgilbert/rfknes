@@ -203,7 +203,7 @@ bottom	ora nki_off_hi - 1,x ; OR high byte into arg
 
 	; draw top row of border
 +	ldx #32		; one line
-	jsr write_draw_buf_header ; write header
+	jsr write_copy_header ; write header
 	.ccmd #0	; write space
 	.ccmd #218	; write top-left corner
 	lda #196	; load horizontal line
@@ -288,13 +288,13 @@ nki_off_hi
 	.byte >(nki_offset_bot + 32 * 1)
 	.byte >(nki_offset_bot + 32 * 0)
 
-; Write a DRAW_BUF header
+; Write a COPY header
 ; X - number of characters
 ; Y [in/out] - offset into cmd_ptr
 ; ppu_addr - starting PPU address
 ; Clobbers: A
-write_draw_buf_header .proc
-	.ccmd #CMD_DRAW_BUF ; write draw command
+write_copy_header .proc
+	.ccmd #CMD_COPY ; write draw command
 	lda ppu_addr + 1 ; nametable base (high byte)
 	.cmd		; write it
 	lda ppu_addr	; nametable base (low byte)
@@ -305,7 +305,7 @@ write_draw_buf_header .proc
 	.pend
 
 ; Resync cmd_ptr, wait for VBLANK, increment ppu_addr by 32, and write
-; a DRAW_BUF header for one line
+; a COPY header for one line
 ; Y [in/out] - offset into cmd_ptr
 ; Clobbers: A, X
 next_line .proc
@@ -319,7 +319,7 @@ next_line .proc
 	inc ppu_addr + 1 ; yes
 +	ldx #32		; one line
 	ldy #0		; reset cmd_buffer offset
-	bpl write_draw_buf_header ; write the header
+	bpl write_copy_header ; write the header
 	.pend
 
 .send
