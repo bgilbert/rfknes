@@ -23,11 +23,14 @@ CMD_EOF			= 0	; no args
 CMD_ENABLE_RENDER	= 1	; no args
 CMD_COPY		= 2	; PPU address (2, high byte first),
 				; count (1), data
+CMD_FILL		= 3	; PPU address (2, high byte first),
+				; count (1), byte
 
 .section fixed
 nmi_table
 	.word nmi_enable_render - 1
 	.word nmi_copy - 1
+	.word nmi_fill - 1
 
 nmi	.proc
 	pha		; push A
@@ -140,6 +143,33 @@ nmi_copy .proc
 	sta PPUDATA	; write it
 	iny		; increment offset
 	dex		; decrement count of remaining blocks
+	bne -		; repeat until done
+
+	; point cmd_ptr after buffer
+done	jmp resync_cmd_ptr
+	.pend
+
+nmi_fill .proc
+	; set nametable address
+	bit PPUSTATUS	; clear address latch
+	ldy #1		; cmd ptr offset
+	lda (cmd_ptr),y	; get nametable.H
+	sta PPUADDR	; write it
+	iny		; increment offset
+	lda (cmd_ptr),y	; get nametable.L
+	sta PPUADDR	; write it
+	iny		; increment offset
+
+	; get counter and fill byte
+	lda (cmd_ptr),y	; get counter
+	tax		; put in X
+	iny		; increment offset
+	lda (cmd_ptr),y	; get fill byte
+	iny		; increment offset
+
+	; write data
+-	sta PPUDATA	; write fill byte
+	dex		; decrement remaining count
 	bne -		; repeat until done
 
 	; point cmd_ptr after buffer

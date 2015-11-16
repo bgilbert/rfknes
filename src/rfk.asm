@@ -30,6 +30,8 @@ nmi_ready	.byte ?
 cmd_ptr		.word ?
 ppu_addr	.word ?
 rand_state	.word ?
+nki_ppu_addr	.word ?
+nki_lines	.byte ?	; including leading/trailing border
 .send
 
 .section bss
@@ -69,6 +71,9 @@ maybe_next_nki .proc
 	bne +		; button pressed?
 	rts		; no, return
 
++	lda nki_lines	; see if we're already showing an NKI
+	beq +		; test
+	jsr clear_nki	; yes; clear it
 +	jsr rand_nki	; get random NKI
 	.cp #$a0, temp1	; draw at bottom
 	jmp print_nki	; draw
@@ -160,6 +165,9 @@ resync_cmd_ptr .proc
 ; Print an NKI
 ; temp1 - high byte of nametable address; set high bit to draw at bottom
 ; tempA - NKI number
+; Returns:
+; nki_ppu_addr - starting PPU address of NKI
+; nki_lines - number of lines in NKI, including border
 print_nki .proc
 	; get string address and bank number
 	asl tempA	; get table offset by doubling nki_num: low
@@ -189,17 +197,25 @@ print_nki .proc
 	lda (tempA),y	; get number of lines
 	sta temp2	; put in temp2
 	tax		; and X
+	clc		; clear carry
+	adc #2		; add border lines
+	sta nki_lines	; and put in nki_lines
 	lda temp1	; move combined arg to A; test high bit
 	bmi bottom	; branch if drawing at bottom
 	.cerror >nki_offset_top > 0 ; assume high byte is 0
 	sta ppu_addr + 1; write high byte
-	.cp #<nki_offset_top, ppu_addr ; copy low byte
+	sta nki_ppu_addr + 1 ; to two places
+	lda #<nki_offset_top ; load low byte
+	sta ppu_addr	; store to ppu_addr
+	sta nki_ppu_addr; and nki_ppu_addr
 	jmp +		; done
 bottom	ora nki_off_hi - 1,x ; OR high byte into arg
 	and #$7f	; drop high bit
 	sta ppu_addr + 1; write high byte
+	sta nki_ppu_addr + 1 ; twice
 	lda nki_off_lo - 1,x ; load low byte
 	sta ppu_addr	; write low byte
+	sta nki_ppu_addr; twice
 
 	; draw top row of border
 +	ldx #32		; one line
@@ -322,4 +338,27 @@ next_line .proc
 	bpl write_copy_header ; write the header
 	.pend
 
+; Clear an NKI
+; nki_ppu_addr - starting PPU address of NKI
+; nki_lines - number of lines in NKI, including border
+; Sets nki_lines to zero
+; Clobbers: A, Y
+clear_nki .proc
+	ldy #0		; base of cmd_ptr
+	.ccmd #CMD_FILL	; write draw command
+	lda nki_ppu_addr + 1 ; nametable base (high byte)
+	.cmd		; write it
+	lda nki_ppu_addr ; nametable base (low byte)
+	.cmd		; write it
+	lda nki_lines	; get line count
+	asl		; multiply by 32
+	asl
+	asl
+	asl
+	asl
+	.cmd		; write it
+	.ccmd #0	; write fill byte
+	sta nki_lines	; zero out nki_lines
+	jmp resync_cmd_ptr ; resync
+	.pend
 .send
