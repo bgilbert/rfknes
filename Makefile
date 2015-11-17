@@ -1,7 +1,17 @@
 all: rfk.nes
 
-rfk.nes rfk.lst: src/rfk.asm src/board.asm src/nki.asm src/nmi.asm src/nes.asm src/string.asm chr/chr.asm nki/nki.asm
-	64tass --flat --quiet -o "$@" -L "$(@:.nes=.lst)" "$<"
+SOURCES = \
+	chr/chr.asm \
+	nki/nki.asm \
+	src/board.asm \
+	src/nes.asm \
+	src/nki.asm \
+	src/nmi.asm \
+	src/rfk.asm \
+	src/string.asm
+
+rfk.nes rfk.lst: $(SOURCES)
+	64tass --flat --quiet -o "$@" -L "$(@:.nes=.lst)" src/rfk.asm
 
 chr/chr.asm: chr/chr.png chr/makechr.py
 	chr/makechr.py $< > $@
