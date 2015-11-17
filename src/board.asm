@@ -144,26 +144,40 @@ draw_board .proc
 	dex		; point to last NKI
 
 	; Write items
--	lda nki_y,x	; get Y coordinate
-	lsr		; divide by 8
-	lsr
-	lsr
-	ora #$20	; add to nametable base
-	.cmd		; store
-	lda nki_y,x	; get Y coordinate again
-	asl		; multiply by 32
-	asl
-	asl
-	asl
-	asl
-	ora nki_x,x	; add X coordinate
-	.cmd		; store
+-	lda nki_x,x	; get X coordinate
+	sta cur_x	; store
+	lda nki_y,x	; get Y coordinate
+	sta cur_y	; store
+	jsr write_scatter_addr ; write address
 	lda nki_glyph,x	; get glyph
 	.cmd		; store
 	dex		; decrement counter
 	bne -		; continue until done
 
 	jmp resync_cmd_ptr
+	.pend
+
+; Write nametable address into cmd_buffer
+; Y [in/out] - cmd_ptr offset
+; cur_x - X coordinate
+; cur_y - Y coordinate
+; Clobbers: A
+write_scatter_addr .proc
+	lda cur_y	; get Y coordinate
+	lsr		; divide by 8
+	lsr
+	lsr
+	ora #$20	; add to nametable base
+	.cmd		; store
+	lda cur_y	; get Y coordinate again
+	asl		; multiply by 32
+	asl
+	asl
+	asl
+	asl
+	ora cur_x	; add X coordinate
+	.cmd		; store
+	rts
 	.pend
 
 ; Clear glyphs on the board and redraw it
