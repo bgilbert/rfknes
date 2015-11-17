@@ -20,6 +20,7 @@
 
 .include "nes.asm"
 .include "string.asm"
+.include "board.asm"
 .include "nmi.asm"
 .include "../nki/nki.asm"
 .include "../chr/chr.asm"
@@ -35,7 +36,7 @@ nki_lines	.byte ?	; including leading/trailing border
 .send
 
 .section bss
-.cerror * % 256 != 0, "Buffer not page-aligned"
+.align $100
 cmd_buffer	.fill $100
 .send
 
@@ -60,9 +61,24 @@ start	.proc
 	.ccmd #CMD_ENABLE_RENDER ; enable render
 	jsr resync_cmd_ptr ; resync
 
-main	jsr maybe_next_nki
+	jsr make_board
+	jsr draw_board
+
+main	jsr maybe_next_board
 	jsr run_nmi	; wait for NMI
 	jmp main	; continue main loop
+	.pend
+
+maybe_next_board .proc
+	jsr input	; query buttons
+	lda new_buttons	; get result
+	bne +		; button pressed?
+	rts		; no, return
+
++	jsr end_board	; clear board
+	jsr run_nmi	; draw
+	jsr make_board	; make a new one
+	jmp draw_board	; draw it
 	.pend
 
 maybe_next_nki .proc
@@ -101,6 +117,7 @@ irq	.proc
 ; Pick a random NKI
 ; Return:
 ; tempA - the NKI
+; Clobbers: A, X
 rand_nki .proc
 again	jsr rand	; randomize high byte
 	and #>(nki_next_power_of_two - 1) ; mask off high bits
@@ -123,6 +140,7 @@ hard	jsr rand	; randomize low byte
 ; Generate "random" number
 ; 16-bit Galois LFSR; polynomial fc00
 ; Return: number in A
+; Clobbers: A, X
 rand	.proc
 	lda rand_state + 1 ; load high byte of state
 	ldx #8		; initialize round counter

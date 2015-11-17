@@ -25,12 +25,15 @@ CMD_COPY		= 2	; PPU address (2, high byte first),
 				; count (1), data
 CMD_FILL		= 3	; PPU address (2, high byte first),
 				; count (1), byte
+CMD_SCATTER		= 4	; count (1), [PPU address (2, high byte first),
+				; byte]
 
 .section fixed
 nmi_table
 	.word nmi_enable_render - 1
 	.word nmi_copy - 1
 	.word nmi_fill - 1
+	.word nmi_scatter - 1
 
 nmi	.proc
 	pha		; push A
@@ -174,6 +177,31 @@ nmi_fill .proc
 
 	; point cmd_ptr after buffer
 done	jmp resync_cmd_ptr
+	.pend
+
+nmi_scatter .proc
+	; get counter
+	ldy #1		; cmd ptr offset
+	lda (cmd_ptr),y	; get counter
+	tax		; put in X
+	iny		; increment offset
+
+	; copy items
+-	bit PPUSTATUS	; clear address latch
+	lda (cmd_ptr),y	; get nametable.H
+	sta PPUADDR	; write it
+	iny		; increment offset
+	lda (cmd_ptr),y	; get nametable.L
+	sta PPUADDR	; write it
+	iny		; increment offset
+	lda (cmd_ptr),y	; get data byte
+	sta PPUDATA	; write it
+	iny		; increment offset
+	dex		; decrement counter
+	bne -		; continue until done
+
+	; point cmd_ptr after buffer
+	jmp resync_cmd_ptr
 	.pend
 
 .send
