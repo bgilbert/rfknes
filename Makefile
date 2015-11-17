@@ -1,6 +1,6 @@
 all: rfk.nes
 
-rfk.nes rfk.lst: src/rfk.asm src/board.asm src/nmi.asm src/nes.asm src/string.asm chr/chr.asm nki/nki.asm
+rfk.nes rfk.lst: src/rfk.asm src/board.asm src/nki.asm src/nmi.asm src/nes.asm src/string.asm chr/chr.asm nki/nki.asm
 	64tass --flat --quiet -o "$@" -L "$(@:.nes=.lst)" "$<"
 
 chr/chr.asm: chr/chr.png chr/makechr.py
