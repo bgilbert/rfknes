@@ -19,6 +19,11 @@
 ;
 
 NUM_NKIS = 20
+BOARD_X_THRESHOLD = 30
+BOARD_Y_THRESHOLD = 28
+BOARD_X_OFFSET = 1
+BOARD_Y_OFFSET = 1
+COORD_MASK = $1f
 
 .section zeropage
 cur_x		.byte ?
@@ -58,19 +63,19 @@ make_board .proc
 	; Pick glyphs and coordinates
 	ldy #NUM_NKIS - 1 ; index
 coord	jsr rand	; X coordinate
-	and #$1f	; mask off low bits
-	cmp #30		; compare with min invalid X
+	and #COORD_MASK	; mask off low bits
+	cmp #BOARD_X_THRESHOLD ; compare with min invalid X
 	bpl coord	; if too large, try again
 	clc		; clear carry
-	adc #1		; allow for border
+	adc #BOARD_X_OFFSET ; allow for border
 	sta nki_x,y	; store
 	sta cur_x	; store again for get_bit_position
 -	jsr rand	; Y coordinate
-	and #$1f	; mask off low bits
-	cmp #28		; compare with min invalid Y
+	and #COORD_MASK	; mask off low bits
+	cmp #BOARD_Y_THRESHOLD ; compare with min invalid Y
 	bpl -		; if too large, try again
 	clc		; clear carry
-	adc #1		; allow for border
+	adc #BOARD_Y_OFFSET ; allow for border
 	sta nki_y,y	; store
 	sta cur_y	; store again for get_bit_position
 	jsr get_bit_position ; get bitmap position
