@@ -74,7 +74,6 @@ maybe_next_board .proc
 	rts		; no, return
 
 +	jsr end_board	; clear board
-	jsr run_nmi	; draw
 	jsr make_board	; make a new one
 	jmp draw_board	; draw it
 	.pend

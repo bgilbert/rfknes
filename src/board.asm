@@ -152,7 +152,7 @@ draw_board .proc
 	lda nki_glyph,x	; get glyph
 	.cmd		; store
 	dex		; decrement counter
-	bne -		; continue until done
+	bpl -		; continue until done
 
 	jmp resync_cmd_ptr
 	.pend
