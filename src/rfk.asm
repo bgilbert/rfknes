@@ -64,7 +64,7 @@ start	.proc
 	jsr make_board
 	jsr place_robot
 
-main	jsr maybe_move_robot
+main	jsr do_input	; handle player actions
 	jsr run_nmi	; wait for NMI
 	jmp main	; continue main loop
 	.pend
@@ -85,13 +85,19 @@ wait_for_start .proc
 	rts
 	.pend
 
-maybe_move_robot .proc
+; Respond to user actions
+do_input .proc
 	; query buttons
 	jsr input	; read input
 	lda new_buttons	; get result
 
-	; early return if directional button not pressed
-	bit direction_mask ; check buttons
+	; special case for Start
+	.cbit BTN_START	; check Start button
+	beq +		; continue unless pressed
+	jmp next_board	; create new board
+
+	; return if directional button not pressed
++	bit direction_mask ; check buttons
 	bne +		; OK if at least one pressed
 	rts		; else bail
 
@@ -177,12 +183,12 @@ maybe_move_robot .proc
 	jmp draw_robot	; draw the robot
 	.pend
 
-maybe_next_board .proc
-	jsr input	; query buttons
-	lda new_buttons	; get result
-	bne +		; button pressed?
-	rts		; no, return
-
+; Show next board
+next_board .proc
+	lda nki_lines	; see if an NKI is showing
+	beq +		; no; continue
+	jsr clear_nki	; clear NKI
+	jsr run_nmi	; wait for frame
 +	jsr end_board	; clear board
 	lda robot_x	; load X coord
 	sta cur_x	; store argument
