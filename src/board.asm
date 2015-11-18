@@ -26,6 +26,7 @@ BOARD_Y_OFFSET = 2
 COORD_MASK = $1f
 
 .section zeropage
+nametable	.byte ?		; top byte
 cur_x		.byte ?
 cur_y		.byte ?
 bit_mask	.byte ?
@@ -128,6 +129,7 @@ get_bit_position .proc
 	.pend
 
 ; Draw the board
+; nametable - target nametable
 ; Clobbers: A, X, Y, cur_x, cur_y
 draw_board .proc
 	; Set up command
@@ -154,6 +156,7 @@ draw_board .proc
 
 ; Write nametable address into cmd_buffer
 ; Y [in/out] - cmd_ptr offset
+; nametable - target nametable
 ; cur_x - X coordinate
 ; cur_y - Y coordinate
 ; Clobbers: A
@@ -162,7 +165,7 @@ write_scatter_addr .proc
 	lsr		; divide by 8
 	lsr
 	lsr
-	ora #>NAMETABLE_0 ; add to nametable base
+	ora nametable	; add to nametable base
 	.cmd		; store
 	lda cur_y	; get Y coordinate again
 	asl		; multiply by 32
@@ -187,6 +190,7 @@ end_board .proc
 	.pend
 
 ; Show an NKI
+; nametable - target nametable
 ; cur_x - X coordinate
 ; cur_y - Y coordinate
 show_nki .proc
@@ -201,7 +205,7 @@ show_nki .proc
 	sta tempA + 1	; store argument
 
 	; select top/bottom of screen
-	lda #>NAMETABLE_0 ; get nametable top
+	lda nametable	; get nametable top
 	ldx cur_y	; get Y coord
 	cpx #(BOARD_Y_THRESHOLD + BOARD_Y_OFFSET) / 2 ; threshold
 	bpl +		; branch if top

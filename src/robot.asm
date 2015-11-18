@@ -54,6 +54,7 @@ place_robot .proc
 
 ; Draw the robot
 ; X - glyph to draw
+; nametable - target nametable
 ; cur_x - X coordinate
 ; cur_y - Y coordinate
 ; Clobbers: A, Y

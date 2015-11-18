@@ -43,6 +43,7 @@ cmd_buffer	.fill $100
 start	.proc
 	.cp2 #cmd_buffer, cmd_ptr ; initialize command pointer
 	.cp2 #$c292, rand_state ; initialize random state
+	.cp #>NAMETABLE_0, nametable ; initialize nametable
 	.cp #$80, PPUCTRL ; configure PPU; enable NMI
 
 	; set up arbitrary palette
