@@ -78,8 +78,6 @@ maybe_move_robot .proc
 	; load coords
 +	ldx robot_x	; X coord
 	ldy robot_y	; Y coord
-	stx cur_x	; save X coord for later
-	sty cur_y	; save Y coord for later
 
 	; check left
 	.cbit BTN_LEFT	; check bit
@@ -115,9 +113,26 @@ maybe_move_robot .proc
 	bmi +		; no
 	ldy robot_y	; or reset
 
-	; clear old robot
-+	stx robot_x	; write new X coord
+	; check for NKI
++	stx cur_x	; X coord argument
+	sty cur_y	; Y coord argument
+	jsr get_bit_position ; get bitmap index
+	lda nki_bitmap,x ; load bitmap byte
+	bit bit_mask	; test bit
+	beq +		; continue if clear
+	rts		; else give up
+
+	; update state
++	ldx cur_x	; get new X coord
+	ldy cur_y	; get new Y coord
+	lda robot_x	; get old X coord
+	sta cur_x	; store argument
+	lda robot_y	; get new Y coord
+	sta cur_y	; store argument
+	stx robot_x	; write new X coord
 	sty robot_y	; write new Y coord
+
+	; clear old robot
 	ldx #0		; load empty glyph
 	jsr draw_robot	; clear robot
 
