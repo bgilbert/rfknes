@@ -68,12 +68,19 @@ main	jsr maybe_move_robot
 	jmp main	; continue main loop
 	.pend
 
+direction_mask .byte ((1 << BTN_UP) | (1 << BTN_DOWN) | (1 << BTN_LEFT) | (1 << BTN_RIGHT))
+
 maybe_move_robot .proc
 	; query buttons
 	jsr input	; read input
 	lda new_buttons	; get result
 	bne +		; button pressed?
 	rts		; no, return
+
+	; early return if directional button not pressed
+	bit direction_mask ; check buttons
+	bne +		; OK if at least one pressed
+	rts		; else bail
 
 	; load coords
 +	ldx robot_x	; X coord
@@ -113,14 +120,26 @@ maybe_move_robot .proc
 	bmi +		; no
 	ldy robot_y	; or reset
 
-	; check for NKI
+	; clear NKI if showing
++	lda nki_lines	; see if an NKI is showing
+	beq +		; no; continue
+	stx temp1	; save X coord
+	sty temp2	; save Y coord
+	jsr clear_nki	; clear NKI
+	jsr run_nmi	; draw
+	jsr draw_board	; redraw board
+	jsr run_nmi	; draw
+	ldx temp1	; restore X coord
+	ldy temp2	; retore Y coord
+
+	; check for new NKI
 +	stx cur_x	; X coord argument
 	sty cur_y	; Y coord argument
 	jsr get_bit_position ; get bitmap index
 	lda nki_bitmap,x ; load bitmap byte
 	bit bit_mask	; test bit
 	beq +		; continue if clear
-	rts		; else give up
+	jmp show_nki	; draw the NKI and return
 
 	; update state
 +	ldx cur_x	; get new X coord

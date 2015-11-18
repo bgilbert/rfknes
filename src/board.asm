@@ -128,7 +128,7 @@ get_bit_position .proc
 	.pend
 
 ; Draw the board
-; Clobbers: A, X, Y
+; Clobbers: A, X, Y, cur_x, cur_y
 draw_board .proc
 	; Set up command
 	ldy #0		; cmd_buffer offset
@@ -184,6 +184,50 @@ end_board .proc
 	dex		; decrement counter
 	bpl -		; continue until done
 	jmp draw_board	; redraw
+	.pend
+
+; Show an NKI
+; cur_x - X coordinate
+; cur_y - Y coordinate
+show_nki .proc
+	; get NKI number
+	jsr find_nki	; get NKI index
+	txa		; put in A
+	asl		; multiply by 2
+	tax		; put back in X
+	lda nki_num,x	; get nki_num.L
+	sta tempA	; store argument
+	lda nki_num + 1,x ; get nki_num.H
+	sta tempA + 1	; store argument
+
+	; select top/bottom of screen
+	lda #>NAMETABLE_0 ; get nametable top
+	ldx cur_y	; get Y coord
+	cpx #(BOARD_Y_THRESHOLD + BOARD_Y_OFFSET) / 2 ; threshold
+	bpl +		; branch if top
+	ora #$80	; bottom; set flag
++	sta temp1	; store argument
+
+	; render
+	jmp print_nki
+	.pend
+
+; Find an NKI, which must exist
+; cur_x - X coordinate
+; cur_y - Y coordinate
+; Return:
+; X - NKI index
+; Clobbers: A
+find_nki .proc
+	ldx #NUM_NKIS	; max count + 1
+-	dex		; decrement count
+	lda nki_x,x	; get NKI X coord
+	cmp cur_x	; compare to our X coord
+	bne -		; match or continue
+	lda nki_y,x	; get NKI Y coord
+	cmp cur_y	; compare to our Y coord
+	bne -		; match or continue
+	rts
 	.pend
 
 .send
