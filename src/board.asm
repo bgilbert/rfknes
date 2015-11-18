@@ -80,9 +80,8 @@ coord	jsr rand	; X coordinate
 	sta cur_y	; store again for get_bit_position
 	jsr get_bit_position ; get bitmap position
 	lda nki_bitmap,x ; load bitmap byte
-	and bit_mask	; check occupied bit
+	bit bit_mask	; check occupied bit
 	bne coord	; if occupied, try again
-	lda nki_bitmap,x ; load bitmap byte again
 	ora bit_mask	; set occupied bit
 	sta nki_bitmap,x ; and write back
 -	jsr rand	; glyph

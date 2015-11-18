@@ -46,7 +46,7 @@ place_robot .proc
 	sta cur_y	; store again for get_bit_position
 	jsr get_bit_position ; get bitmap position
 	lda nki_bitmap,x ; load bitmap byte
-	and bit_mask	; check occupied bit
+	bit bit_mask	; check occupied bit
 	bne place_robot	; if occupied, try again
 	rts
 	.pend
