@@ -181,20 +181,6 @@ maybe_next_board .proc
 	jsr place_robot	; place the robot
 	.pend
 
-maybe_next_nki .proc
-	jsr input	; query buttons
-	lda new_buttons	; get result
-	bne +		; button pressed?
-	rts		; no, return
-
-+	lda nki_lines	; see if we're already showing an NKI
-	beq +		; test
-	jsr clear_nki	; yes; clear it
-+	jsr rand_nki	; get random NKI
-	.cp #$a0, temp1	; draw at bottom
-	jmp print_nki	; draw
-	.pend
-
 ; Tell NMI handler we're ready, then wait for it to complete
 ; Clobbers: A, Y
 run_nmi .proc
