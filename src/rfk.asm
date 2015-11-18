@@ -74,8 +74,6 @@ maybe_move_robot .proc
 	; query buttons
 	jsr input	; read input
 	lda new_buttons	; get result
-	bne +		; button pressed?
-	rts		; no, return
 
 	; early return if directional button not pressed
 	bit direction_mask ; check buttons
