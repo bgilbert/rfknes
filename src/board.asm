@@ -162,7 +162,7 @@ write_scatter_addr .proc
 	lsr		; divide by 8
 	lsr
 	lsr
-	ora #$20	; add to nametable base
+	ora #>NAMETABLE_0 ; add to nametable base
 	.cmd		; store
 	lda cur_y	; get Y coordinate again
 	asl		; multiply by 32
