@@ -28,7 +28,6 @@
 .include "../chr/chr.asm"
 
 .section zeropage
-; Persistent state
 nmi_ready	.byte ?
 cmd_ptr		.word ?
 rand_state	.word ?
