@@ -33,7 +33,7 @@ bit_mask	.byte ?
 .send
 
 .section bss
-nki_num		.fill 2 * NUM_ITEMS
+nki_num		.fill 2 * (NUM_ITEMS - 1)
 item_glyph	.fill NUM_ITEMS
 item_x		.fill NUM_ITEMS
 item_y		.fill NUM_ITEMS
@@ -44,7 +44,7 @@ item_bitmap	.fill (32 * 30) / 8
 ; Generate new board
 make_board .proc
 	; Pick NKI numbers
-	ldy #2 * NUM_ITEMS - 1 ; index
+	ldy #2 * NUM_ITEMS - 3 ; index (excluding kitten)
 -	jsr rand_nki	; get an NKI
 	lda tempA + 1	; load high byte
 	sta nki_num,y	; write it
@@ -223,7 +223,7 @@ show_nki .proc
 ; X - NKI index
 ; Clobbers: A
 find_nki .proc
-	ldx #NUM_ITEMS	; max count + 1
+	ldx #NUM_ITEMS - 1 ; max count + 1 (excluding kitten)
 -	dex		; decrement count
 	lda item_x,x	; get NKI X coord
 	cmp cur_x	; compare to our X coord
@@ -232,6 +232,21 @@ find_nki .proc
 	cmp cur_y	; compare to our Y coord
 	bne -		; match or continue
 	rts
+	.pend
+
+; Check whether the specified coordinates contain kitten
+; cur_x - X coordinate
+; cur_y - Y coordinate
+; Return:
+; Z - true if kitten, false otherwise
+; Clobbers: A
+test_kitten .proc
+	lda item_x + NUM_ITEMS - 1 ; get X coord of kitten
+	cmp cur_x	; compare to our coord
+	bne +		; no match?  done
+	lda item_y + NUM_ITEMS - 1 ; get Y coord of kitten
+	cmp cur_y	; compare to our coord
++	rts
 	.pend
 
 .send

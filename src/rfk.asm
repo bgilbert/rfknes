@@ -157,11 +157,14 @@ do_input .proc
 	jsr get_bit_position ; get bitmap index
 	lda item_bitmap,x ; load bitmap byte
 	bit bit_mask	; test bit
-	beq +		; continue if clear
-	jmp show_nki	; draw the NKI and return
+	beq update	; continue if clear
+	jsr test_kitten	; is item kitten?
+	beq +		; jump if kitten
+	jmp show_nki	; NKI; draw and return
++	jmp next_board	; kitten; replace board and return
 
 	; update state
-+	ldx cur_x	; get new X coord
+update	ldx cur_x	; get new X coord
 	ldy cur_y	; get new Y coord
 	lda robot_x	; get old X coord
 	sta cur_x	; store argument
