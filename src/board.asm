@@ -18,7 +18,7 @@
 ; 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 ;
 
-NUM_NKIS = 20
+NUM_ITEMS = 20
 BOARD_X_THRESHOLD = 30
 BOARD_Y_THRESHOLD = 26
 BOARD_X_OFFSET = 1
@@ -33,18 +33,18 @@ bit_mask	.byte ?
 .send
 
 .section bss
-nki_num		.fill 2 * NUM_NKIS
-nki_glyph	.fill NUM_NKIS
-nki_x		.fill NUM_NKIS
-nki_y		.fill NUM_NKIS
-nki_bitmap	.fill (32 * 30) / 8
+nki_num		.fill 2 * NUM_ITEMS
+item_glyph	.fill NUM_ITEMS
+item_x		.fill NUM_ITEMS
+item_y		.fill NUM_ITEMS
+item_bitmap	.fill (32 * 30) / 8
 .send
 
 .section fixed
 ; Generate new board
 make_board .proc
 	; Pick NKI numbers
-	ldy #2 * NUM_NKIS - 1 ; index
+	ldy #2 * NUM_ITEMS - 1 ; index
 -	jsr rand_nki	; get an NKI
 	lda tempA + 1	; load high byte
 	sta nki_num,y	; write it
@@ -55,21 +55,21 @@ make_board .proc
 	bpl -		; continue until done
 
 	; Zero bitmap
-	ldy #size(nki_bitmap) ; index
+	ldy #size(item_bitmap) ; index
 	lda #0		; value
--	sta nki_bitmap,y ; write
+-	sta item_bitmap,y ; write
 	dey		; decrement index
 	bpl -		; continue until done
 
 	; Pick glyphs and coordinates
-	ldy #NUM_NKIS - 1 ; index
+	ldy #NUM_ITEMS - 1 ; index
 coord	jsr rand	; X coordinate
 	and #COORD_MASK	; mask off low bits
 	cmp #BOARD_X_THRESHOLD ; compare with min invalid X
 	bpl coord	; if too large, try again
 	clc		; clear carry
 	adc #BOARD_X_OFFSET ; allow for border
-	sta nki_x,y	; store
+	sta item_x,y	; store
 	sta cur_x	; store again for get_bit_position
 -	jsr rand	; Y coordinate
 	and #COORD_MASK	; mask off low bits
@@ -77,14 +77,14 @@ coord	jsr rand	; X coordinate
 	bpl -		; if too large, try again
 	clc		; clear carry
 	adc #BOARD_Y_OFFSET ; allow for border
-	sta nki_y,y	; store
+	sta item_y,y	; store
 	sta cur_y	; store again for get_bit_position
 	jsr get_bit_position ; get bitmap position
-	lda nki_bitmap,x ; load bitmap byte
+	lda item_bitmap,x ; load bitmap byte
 	bit bit_mask	; check occupied bit
 	bne coord	; if occupied, try again
 	ora bit_mask	; set occupied bit
-	sta nki_bitmap,x ; and write back
+	sta item_bitmap,x ; and write back
 -	jsr rand	; glyph
 	and #$7f	; drop high bit
 	cmp #$21	; minimum printable
@@ -93,7 +93,7 @@ coord	jsr rand	; X coordinate
 	bpl -		; or try again
 	cmp #ROBOT	; must not be robot!
 	beq -		; or try again
-	sta nki_glyph,y	; store
+	sta item_glyph,y ; store
 	dey		; decrement index
 	bpl coord	; continue until done
 
@@ -135,18 +135,18 @@ draw_board .proc
 	; Set up command
 	ldy #0		; cmd_buffer offset
 	.ccmd #CMD_SCATTER ; scatter command
-	lda #NUM_NKIS	; load NKI count
+	lda #NUM_ITEMS	; load item count
 	.cmd		; store
 	tax		; copy to X
-	dex		; point to last NKI
+	dex		; point to last item
 
 	; Write items
--	lda nki_x,x	; get X coordinate
+-	lda item_x,x	; get X coordinate
 	sta cur_x	; store
-	lda nki_y,x	; get Y coordinate
+	lda item_y,x	; get Y coordinate
 	sta cur_y	; store
 	jsr write_scatter_addr ; write address
-	lda nki_glyph,x	; get glyph
+	lda item_glyph,x ; get glyph
 	.cmd		; store
 	dex		; decrement counter
 	bpl -		; continue until done
@@ -179,11 +179,11 @@ write_scatter_addr .proc
 	.pend
 
 ; Clear glyphs on the board and redraw it
-; Clobbers: A, X, Y, nki_glyph
+; Clobbers: A, X, Y, item_glyph
 end_board .proc
 	lda #0		; load empty glyph
-	ldx #NUM_NKIS - 1 ; load counter
--	sta nki_glyph,x	; store glyph
+	ldx #NUM_ITEMS - 1 ; load counter
+-	sta item_glyph,x ; store glyph
 	dex		; decrement counter
 	bpl -		; continue until done
 	jmp draw_board	; redraw
@@ -223,12 +223,12 @@ show_nki .proc
 ; X - NKI index
 ; Clobbers: A
 find_nki .proc
-	ldx #NUM_NKIS	; max count + 1
+	ldx #NUM_ITEMS	; max count + 1
 -	dex		; decrement count
-	lda nki_x,x	; get NKI X coord
+	lda item_x,x	; get NKI X coord
 	cmp cur_x	; compare to our X coord
 	bne -		; match or continue
-	lda nki_y,x	; get NKI Y coord
+	lda item_y,x	; get NKI Y coord
 	cmp cur_y	; compare to our Y coord
 	bne -		; match or continue
 	rts

@@ -151,11 +151,11 @@ do_input .proc
 	ldx temp1	; restore X coord
 	ldy temp2	; retore Y coord
 
-	; check for new NKI
+	; check for new item
 +	stx cur_x	; X coord argument
 	sty cur_y	; Y coord argument
 	jsr get_bit_position ; get bitmap index
-	lda nki_bitmap,x ; load bitmap byte
+	lda item_bitmap,x ; load bitmap byte
 	bit bit_mask	; test bit
 	beq +		; continue if clear
 	jmp show_nki	; draw the NKI and return
