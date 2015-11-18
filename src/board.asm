@@ -126,11 +126,6 @@ get_bit_position .proc
 	rts
 	.pend
 
-left_shifts
-	.for index = 0, index < 8, index = index + 1
-	.byte (1 << index)
-	.next
-
 ; Draw the board
 ; Clobbers: A, X, Y
 draw_board .proc

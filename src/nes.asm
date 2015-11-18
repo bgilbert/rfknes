@@ -118,6 +118,16 @@ NAMETABLE_1 =	$2400
 NAMETABLE_2 =	$2800
 NAMETABLE_3 =	$2c00
 
+; bit numbers
+BTN_A =		7
+BTN_B =		6
+BTN_SELECT =	5
+BTN_START =	4
+BTN_UP =	3
+BTN_DOWN =	2
+BTN_LEFT =	1
+BTN_RIGHT =	0
+
 ; Init
 .section fixed
 reset	.proc
@@ -164,10 +174,8 @@ reset	.proc
 	jmp start
 	.pend
 
-; Read controller 1.
-; MSB->LSB: A, B, Select, Start, Up, Down, Left, Right.
-;
-; Set:
+; Read controller 1
+; Return:
 ; buttons - buttons currently down
 ; new_buttons - newly-pressed buttons
 input	.proc
@@ -205,5 +213,16 @@ cp2	.macro
 	lda >value
 	sta \2 + 1
 	.endm
+
+; Use bit instruction to check specified bit against A
+; args: bit number
+cbit	.macro
+	bit left_shifts + \1
+	.endm
+
+left_shifts
+	.for index = 0, index < 8, index = index + 1
+	.byte (1 << index)
+	.next
 
 .send

@@ -53,6 +53,7 @@ place_robot .proc
 
 ; Draw the robot
 ; X - glyph to draw
+; Clobbers: A, Y
 draw_robot .proc
 	ldy #0		; cmd_buffer offset
 	.ccmd #CMD_SCATTER ; scatter command

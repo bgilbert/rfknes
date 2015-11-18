@@ -66,9 +66,69 @@ start	.proc
 	ldx #ROBOT
 	jsr draw_robot
 
-main	jsr maybe_next_board
+main	jsr maybe_move_robot
 	jsr run_nmi	; wait for NMI
 	jmp main	; continue main loop
+	.pend
+
+maybe_move_robot .proc
+	; query buttons
+	jsr input	; read input
+	lda new_buttons	; get result
+	bne +		; button pressed?
+	rts		; no, return
+
+	; load coords
++	ldx robot_x	; X coord
+	ldy robot_y	; Y coord
+
+	; check left
+	.cbit BTN_LEFT	; check bit
+	beq +		; or continue
+	dex		; decrement
+
+	; check right
++	.cbit BTN_RIGHT	; check bit
+	beq +		; or continue
+	inx		; increment
+
+	; check up
++	.cbit BTN_UP	; check bit
+	beq +		; or continue
+	dey		; decrement
+
+	; check down
++	.cbit BTN_DOWN	; check bit
+	beq +		; or continue
+	iny		; increment
+
+	; apply bounds
++	cpx #BOARD_X_OFFSET ; X coord < min?
+	bpl +		; no
+	ldx robot_x	; or reset
++	cpx #(BOARD_X_THRESHOLD + BOARD_X_OFFSET) ; X coord > max?
+	bmi +		; no
+	ldx robot_x	; or reset
++	cpy #BOARD_Y_OFFSET ; Y coord < min?
+	bpl +		; no
+	ldy robot_y	; or reset
++	cpy #(BOARD_Y_THRESHOLD + BOARD_Y_OFFSET) ; Y coord > max?
+	bmi +		; no
+	ldy robot_y	; or reset
+
+	; clear old robot
++	stx temp1	; save X coord
+	sty temp2	; save Y coord
+	ldx #0		; load empty glyph
+	jsr draw_robot	; clear robot
+	ldx temp1	; restore X coord
+	ldy temp2	; restore Y coord
+
+	; show new robot
+	stx robot_x	; store X coord
+	sty robot_y	; store Y coord
+	ldx #ROBOT	; robot glyph
+	jmp draw_robot	; draw the robot
 	.pend
 
 maybe_next_board .proc
