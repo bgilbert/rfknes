@@ -78,6 +78,8 @@ maybe_move_robot .proc
 	; load coords
 +	ldx robot_x	; X coord
 	ldy robot_y	; Y coord
+	stx cur_x	; save X coord for later
+	sty cur_y	; save Y coord for later
 
 	; check left
 	.cbit BTN_LEFT	; check bit
@@ -114,16 +116,16 @@ maybe_move_robot .proc
 	ldy robot_y	; or reset
 
 	; clear old robot
-+	stx temp1	; save X coord
-	sty temp2	; save Y coord
++	stx robot_x	; write new X coord
+	sty robot_y	; write new Y coord
 	ldx #0		; load empty glyph
 	jsr draw_robot	; clear robot
-	ldx temp1	; restore X coord
-	ldy temp2	; restore Y coord
 
 	; show new robot
-	stx robot_x	; store X coord
-	sty robot_y	; store Y coord
+	lda robot_x	; get X coord back
+	sta cur_x	; save argument
+	lda robot_y	; get Y coord back
+	sta cur_y	; save argument
 	ldx #ROBOT	; robot glyph
 	jmp draw_robot	; draw the robot
 	.pend
@@ -135,6 +137,10 @@ maybe_next_board .proc
 	rts		; no, return
 
 +	jsr end_board	; clear board
+	lda robot_x	; load X coord
+	sta cur_x	; store argument
+	lda robot_y	; load Y coord
+	sta cur_y	; store argument
 	ldx #0		; load empty glyph
 	jsr draw_robot	; clear robot
 	jsr make_board	; make a new board

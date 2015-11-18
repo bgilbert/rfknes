@@ -54,15 +54,13 @@ place_robot .proc
 
 ; Draw the robot
 ; X - glyph to draw
+; cur_x - X coordinate
+; cur_y - Y coordinate
 ; Clobbers: A, Y
 draw_robot .proc
 	ldy #0		; cmd_buffer offset
 	.ccmd #CMD_SCATTER ; scatter command
 	.ccmd #1	; just the robot
-	lda robot_x	; load X coord
-	sta cur_x	; store it
-	lda robot_y	; load Y coord
-	sta cur_y	; store it
 	jsr write_scatter_addr ; write address
 	txa		; get glyph
 	.cmd		; write it
