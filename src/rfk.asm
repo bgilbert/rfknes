@@ -60,6 +60,7 @@ start	.proc
 	.ccmd #CMD_ENABLE_RENDER ; enable render
 	jsr resync_cmd_ptr ; resync
 
+	jsr wait_for_start
 	jsr make_board
 	jsr place_robot
 
@@ -69,6 +70,20 @@ main	jsr maybe_move_robot
 	.pend
 
 direction_mask .byte ((1 << BTN_UP) | (1 << BTN_DOWN) | (1 << BTN_LEFT) | (1 << BTN_RIGHT))
+
+; Repeatedly increment PRNG state until Start button is pressed
+wait_for_start .proc
+-	inc rand_state	; increment rand_state.L
+	bne +		; need to carry?
+	inc rand_state + 1 ; yes; increment rand_state.H
+	bne +		; rand_state == 0?
+	inc rand_state	; yes; increment again to avoid stuck PRNG
++	jsr input	; query buttons
+	lda new_buttons	; get result
+	.cbit BTN_START	; check for start button
+	beq -		; continue if not pressed
+	rts
+	.pend
 
 maybe_move_robot .proc
 	; query buttons
