@@ -61,10 +61,7 @@ start	.proc
 	jsr resync_cmd_ptr ; resync
 
 	jsr make_board
-	jsr draw_board
 	jsr place_robot
-	ldx #ROBOT
-	jsr draw_robot
 
 main	jsr maybe_move_robot
 	jsr run_nmi	; wait for NMI
@@ -142,9 +139,6 @@ maybe_next_board .proc
 	jsr draw_robot	; clear robot
 	jsr make_board	; make a new board
 	jsr place_robot	; place the robot
-	jsr draw_board	; draw the board
-	ldx #ROBOT	; robot glyph
-	jmp draw_robot	; draw the robot
 	.pend
 
 maybe_next_nki .proc

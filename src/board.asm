@@ -95,7 +95,8 @@ coord	jsr rand	; X coordinate
 	sta nki_glyph,y	; store
 	dey		; decrement index
 	bpl coord	; continue until done
-	rts
+
+	jmp draw_board	; draw the board
 	.pend
 
 ; Get bitmap position for specified coordinate

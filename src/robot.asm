@@ -48,7 +48,8 @@ place_robot .proc
 	lda nki_bitmap,x ; load bitmap byte
 	bit bit_mask	; check occupied bit
 	bne place_robot	; if occupied, try again
-	rts
+	ldx #ROBOT	; load glyph
+	jmp draw_robot	; draw robot
 	.pend
 
 ; Draw the robot
