@@ -21,6 +21,7 @@
 .include "nes.asm"
 .include "string.asm"
 .include "board.asm"
+.include "robot.asm"
 .include "nki.asm"
 .include "nmi.asm"
 .include "../nki/nki.asm"
@@ -61,6 +62,9 @@ start	.proc
 
 	jsr make_board
 	jsr draw_board
+	jsr place_robot
+	ldx #ROBOT
+	jsr draw_robot
 
 main	jsr maybe_next_board
 	jsr run_nmi	; wait for NMI
@@ -74,8 +78,13 @@ maybe_next_board .proc
 	rts		; no, return
 
 +	jsr end_board	; clear board
-	jsr make_board	; make a new one
-	jmp draw_board	; draw it
+	ldx #0		; load empty glyph
+	jsr draw_robot	; clear robot
+	jsr make_board	; make a new board
+	jsr place_robot	; place the robot
+	jsr draw_board	; draw the board
+	ldx #ROBOT	; robot glyph
+	jmp draw_robot	; draw the robot
 	.pend
 
 maybe_next_nki .proc

@@ -8,6 +8,7 @@ SOURCES = \
 	src/nki.asm \
 	src/nmi.asm \
 	src/rfk.asm \
+	src/robot.asm \
 	src/string.asm
 
 rfk.nes rfk.lst: $(SOURCES)

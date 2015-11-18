@@ -91,7 +91,7 @@ coord	jsr rand	; X coordinate
 	bmi -		; or try again
 	cmp #$7f	; minimum non-printable
 	bpl -		; or try again
-	cmp #$23	; must not be robot!
+	cmp #ROBOT	; must not be robot!
 	beq -		; or try again
 	sta nki_glyph,y	; store
 	dey		; decrement index
