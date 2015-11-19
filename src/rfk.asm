@@ -64,7 +64,11 @@ start	.proc
 
 	; enable render
 	ldy #0		; buffer index
-	.ccmd #CMD_ENABLE_RENDER ; enable render
+	.ccmd #CMD_POKE	; command
+	.ccmd #<PPUMASK	; addr low byte
+	.ccmd #>PPUMASK	; addr high byte
+	.ccmd #$1e	; enable rendering
+
 	jsr resync_cmd_ptr ; resync
 	jsr run_nmi	; draw
 

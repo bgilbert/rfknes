@@ -20,7 +20,7 @@
 
 ; NMI commands
 CMD_EOF			= 0	; no args
-CMD_ENABLE_RENDER	= 1	; no args
+CMD_POKE		= 1	; CPU address (2, low byte first), byte
 CMD_COPY		= 2	; PPU address (2, high byte first),
 				; count (1), data
 CMD_FILL		= 3	; PPU address (2, high byte first),
@@ -28,9 +28,13 @@ CMD_FILL		= 3	; PPU address (2, high byte first),
 CMD_SCATTER		= 4	; count (1), [PPU address (2, high byte first),
 				; byte]
 
+.section zeropage
+nmi_addr	.word ?
+.send
+
 .section fixed
 nmi_table
-	.word nmi_enable_render - 1
+	.word nmi_poke - 1
 	.word nmi_copy - 1
 	.word nmi_fill - 1
 	.word nmi_scatter - 1
@@ -82,9 +86,18 @@ cmd_dispatch .proc
 	rts		; call
 	.pend
 
-nmi_enable_render .proc
-	.cp #$1e, PPUMASK ; enable rendering
-	ldy #1		; size of command
+nmi_poke .proc
+	ldy #1		; cmd_ptr offset
+	lda (cmd_ptr),y	; address low byte
+	sta nmi_addr	; store it
+	iny		; increment offset
+	lda (cmd_ptr),y	; address high byte
+	sta nmi_addr + 1 ; store it
+	iny		; increment offset
+	lda (cmd_ptr),y	; data byte
+	iny		; increment offset
+	ldx #0		; offset for indirect addressing
+	sta (nmi_addr,x) ; store the byte
 	jmp resync_cmd_ptr
 	.pend
 
