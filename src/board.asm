@@ -41,6 +41,30 @@ item_bitmap	.fill (32 * 30) / 8
 .send
 
 .section fixed
+; Completely clear nametable
+; nametable - target nametable
+clear_nametable .proc
+	ldx #3		; iteration counter
+-	ldy #0		; cmd_buffer offset
+	.ccmd #CMD_FILL	; fill command
+	txa		; get counter
+	clc		; clear carry
+	adc nametable	; add nametable high byte
+	.cmd		; write it
+	.ccmd #0	; write nametable low byte
+	lda #0		; clearing 256 bytes
+	cpx #3		; except in last nametable page
+	bne +		; skip unless last page
+	lda #192	; clearing 192 bytes
++	.cmd		; write count
+	.ccmd #0	; write empty glyph
+	jsr resync_cmd_ptr ; resync
+	jsr run_nmi	; draw
+	dex		; decrement counter
+	bpl -		; continue until done
+	rts
+	.pend
+
 ; Generate new board
 make_board .proc
 	; Pick NKI numbers

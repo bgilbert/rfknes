@@ -45,12 +45,12 @@ stringentry .macro
 	.endm
 
 ; Print a string array
-; args: nametable_base, x, y, bank, addr
+; args: nametable_base, x, y, symbol
 print	.macro
-	.cp2 #\5, tempA
+	.cp2 #\4_addr, tempA
 	coord_addr = \1 + \3 * 32 + \2
 	.cp2 #coord_addr, tempB
-	lda #\4
+	lda #\4_bank
 	jsr do_print
 	.endm
 

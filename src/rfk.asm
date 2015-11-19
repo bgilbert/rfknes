@@ -27,6 +27,8 @@
 .include "../nki/nki.asm"
 .include "../chr/chr.asm"
 
+VERSION = "0.1"
+
 .section zeropage
 nmi_ready	.byte ?
 cmd_ptr		.word ?
@@ -37,6 +39,8 @@ rand_state	.word ?
 .align $100
 cmd_buffer	.fill $100
 .send
+
+.strings instructions, 2, [format("  robotfindskitten v%s.%d", VERSION, nki_count), "     by Benjamin Gilbert", "       Original game by", "      Leonard Richardson", "   Released under the GPLv2", "", "", "In this game, you are robot.", "", "Your job is to find kitten.", "", "This task is complicated by", "the existence of various", "things which are not kitten.", "", "Robot must touch items to", "determine if they are kitten", "or not.", "", "The game ends when", "robotfindskitten.", "", "", "", "         PRESS START"]
 
 .section fixed
 start	.proc
@@ -55,12 +59,18 @@ start	.proc
 	cpx #$30
 	bne -
 
+	; render instructions
+	.print NAMETABLE_0, 2, 2, instructions
+
 	; enable render
 	ldy #0		; buffer index
 	.ccmd #CMD_ENABLE_RENDER ; enable render
 	jsr resync_cmd_ptr ; resync
+	jsr run_nmi	; draw
 
+	; wait for Start button; generate board
 	jsr wait_for_start
+	jsr clear_nametable
 	jsr make_board
 	jsr place_robot
 
