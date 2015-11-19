@@ -67,7 +67,7 @@ start	.proc
 	.ccmd #CMD_POKE	; command
 	.ccmd #<PPUMASK	; addr low byte
 	.ccmd #>PPUMASK	; addr high byte
-	.ccmd #$1e	; enable rendering
+	.ccmd #PPUMASK_NORMAL ; enable rendering
 
 	jsr resync_cmd_ptr ; resync
 	jsr run_nmi	; draw
@@ -105,10 +105,15 @@ do_input .proc
 	jsr input	; read input
 	lda new_buttons	; get result
 
-	; special case for Start
-	.cbit BTN_START	; check Start button
+	; Select generates new board
+	.cbit BTN_SELECT ; check Select button
 	beq +		; continue unless pressed
 	jmp next_board	; create new board
+
+	; Start pauses
++	.cbit BTN_START	; check Start button
+	beq +		; continue unless pressed
+	jmp pause	; pause
 
 	; return if directional button not pressed
 +	bit direction_mask ; check buttons
@@ -196,6 +201,31 @@ update	ldx cur_x	; get new X coord
 	sta cur_y	; save argument
 	ldx #ROBOT	; robot glyph
 	jmp draw_robot	; draw the robot
+	.pend
+
+pause	.proc
+	; gray out screen
+	ldy #0		; buffer index
+	.ccmd #CMD_POKE	; command
+	.ccmd #<PPUMASK	; addr low byte
+	.ccmd #>PPUMASK	; addr high byte
+	.ccmd #(PPUMASK_NORMAL | $1) ; rendering enabled; grayscale
+	jsr resync_cmd_ptr
+
+	; wait for Start
+-	jsr run_nmi	; draw
+	jsr input	; read input
+	lda new_buttons	; get result
+	.cbit BTN_START	; check Start button
+	beq -		; continue unless pressed
+
+	; ungray screen
+	ldy #0		; buffer index
+	.ccmd #CMD_POKE	; command
+	.ccmd #<PPUMASK	; addr low byte
+	.ccmd #>PPUMASK	; addr high byte
+	.ccmd #PPUMASK_NORMAL ; rendering enabled
+	jmp resync_cmd_ptr
 	.pend
 
 ; Show next board

@@ -118,6 +118,8 @@ NAMETABLE_1 =	$2400
 NAMETABLE_2 =	$2800
 NAMETABLE_3 =	$2c00
 
+PPUMASK_NORMAL = $1e
+
 ; bit numbers
 BTN_A =		7
 BTN_B =		6
