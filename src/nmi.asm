@@ -24,7 +24,7 @@ CMD_ENABLE_RENDER	= 1	; no args
 CMD_COPY		= 2	; PPU address (2, high byte first),
 				; count (1), data
 CMD_FILL		= 3	; PPU address (2, high byte first),
-				; count (1), byte
+				; count (1) (#0 == 256 bytes), byte
 CMD_SCATTER		= 4	; count (1), [PPU address (2, high byte first),
 				; byte]
 
@@ -168,15 +168,50 @@ nmi_fill .proc
 	tax		; put in X
 	iny		; increment offset
 	lda (cmd_ptr),y	; get fill byte
-	iny		; increment offset
+	tay		; put in Y
 
-	; write data
--	sta PPUDATA	; write fill byte
+	; bypass early exhaustion checks for count == 0 (256 bytes)
+	cpx #0		; count == 0?
+	beq unroll	; go directly to main loop
+
+	; write data until multiple of 16 bytes remaining
+	jmp +		; start loop
+-	sty PPUDATA	; write byte
 	dex		; decrement remaining count
+	txa		; copy counter to A
++	and #$0f	; continue until a multiple of 16 bytes
 	bne -		; repeat until done
 
+	; write data 16 bytes at a time
+	txa		; get remaining count
+	beq done	; skip if already done
+	lsr		; divide by 16
+	lsr
+	lsr
+	lsr
+	tax		; and put it back
+unroll	sty PPUDATA	; write byte 1
+	sty PPUDATA	; write byte 2
+	sty PPUDATA	; write byte 3
+	sty PPUDATA	; write byte 4
+	sty PPUDATA	; write byte 5
+	sty PPUDATA	; write byte 6
+	sty PPUDATA	; write byte 7
+	sty PPUDATA	; write byte 8
+	sty PPUDATA	; write byte 9
+	sty PPUDATA	; write byte 10
+	sty PPUDATA	; write byte 11
+	sty PPUDATA	; write byte 12
+	sty PPUDATA	; write byte 13
+	sty PPUDATA	; write byte 14
+	sty PPUDATA	; write byte 15
+	sty PPUDATA	; write byte 16
+	dex		; decrement remaining count
+	bne unroll	; repeat until done
+
 	; point cmd_ptr after buffer
-done	jmp resync_cmd_ptr
+done	ldy #5		; bytes in command
+	jmp resync_cmd_ptr
 	.pend
 
 nmi_scatter .proc

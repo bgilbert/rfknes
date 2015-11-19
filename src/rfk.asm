@@ -145,9 +145,7 @@ do_input .proc
 	stx temp1	; save X coord
 	sty temp2	; save Y coord
 	jsr clear_nki	; clear NKI
-	jsr run_nmi	; draw
 	jsr draw_board	; redraw board
-	jsr run_nmi	; draw
 	ldx temp1	; restore X coord
 	ldy temp2	; retore Y coord
 
