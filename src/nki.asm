@@ -22,29 +22,30 @@
 ppu_addr	.word ?
 nki_ppu_addr	.word ?
 nki_lines	.byte ?	; including leading/trailing border
+cur_nki		.word ?
 .send
 
 .section fixed
 ; Pick a random NKI
 ; Return:
-; tempA - the NKI
+; cur_nki - the NKI
 ; Clobbers: A, X
 rand_nki .proc
 again	jsr rand	; randomize high byte
 	and #>(nki_next_power_of_two - 1) ; mask off high bits
-	sta tempA + 1	; store high byte
+	sta cur_nki + 1	; store high byte
 	cmp #>(nki_count - 1) ; compare to max index
 	beq hard	; branch if outcome uncertain
 	bpl again	; high byte too large?  try again
 	jsr rand	; randomize low byte
-	sta tempA	; store low byte
+	sta cur_nki	; store low byte
 	rts
 
 hard	jsr rand	; randomize low byte
 	cmp #<(nki_count - 1) ; compare to max index
 	beq +		; equal; we're safe
 	bpl again	; greater; try again
-+	sta tempA	; store low byte
++	sta cur_nki	; store low byte
 	rts
 	.pend
 

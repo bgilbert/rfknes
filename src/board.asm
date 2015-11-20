@@ -70,10 +70,10 @@ make_board .proc
 	; Pick NKI numbers
 	ldy #2 * NUM_ITEMS - 3 ; index (excluding kitten)
 -	jsr rand_nki	; get an NKI
-	lda tempA + 1	; load high byte
+	lda cur_nki + 1	; load high byte
 	sta nki_num,y	; write it
 	dey		; decrement
-	lda tempA	; load low byte
+	lda cur_nki	; load low byte
 	sta nki_num,y	; write it
 	dey		; decrement
 	bpl -		; continue until done
