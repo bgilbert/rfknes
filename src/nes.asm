@@ -70,16 +70,8 @@ prg_end =	*
 .logical 0
 temp1	.byte ?
 temp2	.byte ?
-temp3	.byte ?
-temp4	.byte ?
-temp5	.byte ?
-temp6	.byte ?
-temp7	.byte ?
-temp8	.byte ?
 tempA	.word ?
 tempB	.word ?
-tempC	.word ?
-tempD	.word ?
 buttons		.byte ?
 new_buttons	.byte ?
 .dsection zeropage
