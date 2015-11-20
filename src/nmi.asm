@@ -29,11 +29,14 @@ CMD_SCATTER		= 4	; count (1), [PPU address (2, high byte first),
 				; byte]
 
 .section zeropage
+cmd_off		.byte ?
 nmi_addr	.word ?
 .send
 
 .section fixed
 nmi_table
+	; On entry: cmd_off loaded into Y
+	; On exit: cmd_off updated
 	.word nmi_poke - 1
 	.word nmi_copy - 1
 	.word nmi_fill - 1
@@ -52,11 +55,12 @@ nmi	.proc
 	.cp #0, nmi_ready ; clear ready flag
 
 	; walk command buffer
-	.cp2 #cmd_buffer, cmd_ptr ; initialize command ptr
-	bne +		; start loop
+	ldy #0		; load new command offset
+	sty cmd_off	; and store it
+	beq +		; start loop
 -	jsr cmd_dispatch; dispatch
-+	ldy #0		; load offset into buffer
-	lda (cmd_ptr),y	; get command
+	ldy cmd_off	; load offset into buffer
++	lda cmd_buf,y	; get command
 	bne -		; continue until command 0
 
 	; reset scroll after update
@@ -87,39 +91,40 @@ cmd_dispatch .proc
 	.pend
 
 nmi_poke .proc
-	ldy #1		; cmd_ptr offset
-	lda (cmd_ptr),y	; address low byte
+	iny		; increment offset
+	lda cmd_buf,y	; address low byte
 	sta nmi_addr	; store it
 	iny		; increment offset
-	lda (cmd_ptr),y	; address high byte
+	lda cmd_buf,y	; address high byte
 	sta nmi_addr + 1 ; store it
 	iny		; increment offset
-	lda (cmd_ptr),y	; data byte
+	lda cmd_buf,y	; data byte
 	iny		; increment offset
 	ldx #0		; offset for indirect addressing
 	sta (nmi_addr,x) ; store the byte
-	jmp resync_cmd_ptr
+	sty cmd_off	; store offset
+	rts
 	.pend
 
 nmi_copy .proc
 	; set nametable address
 	bit PPUSTATUS	; clear address latch
-	ldy #1		; cmd ptr offset
-	lda (cmd_ptr),y	; get nametable.H
+	iny		; increment offset
+	lda cmd_buf,y	; get nametable.H
 	sta PPUADDR	; write it
 	iny		; increment offset
-	lda (cmd_ptr),y	; get nametable.L
+	lda cmd_buf,y	; get nametable.L
 	sta PPUADDR	; write it
 	iny		; increment offset
 
 	; get counter
-	lda (cmd_ptr),y	; get counter
+	lda cmd_buf,y	; get counter
 	tax		; put in X
 	iny		; increment offset
 
 	; write data until multiple of 8 bytes remaining
 	bpl +		; start loop
--	lda (cmd_ptr),y	; load byte
+-	lda cmd_buf,y	; load byte
 	sta PPUDATA	; write it
 	dex		; decrement remaining count
 	iny		; increment offset
@@ -134,54 +139,57 @@ nmi_copy .proc
 	lsr
 	lsr
 	tax		; and put it back
--	lda (cmd_ptr),y	; load byte 1
+-	lda cmd_buf,y	; load byte 1
 	sta PPUDATA	; write it
 	iny		; increment offset
-	lda (cmd_ptr),y	; load byte 2
+	lda cmd_buf,y	; load byte 2
 	sta PPUDATA	; write it
 	iny		; increment offset
-	lda (cmd_ptr),y	; load byte 3
+	lda cmd_buf,y	; load byte 3
 	sta PPUDATA	; write it
 	iny		; increment offset
-	lda (cmd_ptr),y	; load byte 4
+	lda cmd_buf,y	; load byte 4
 	sta PPUDATA	; write it
 	iny		; increment offset
-	lda (cmd_ptr),y	; load byte 5
+	lda cmd_buf,y	; load byte 5
 	sta PPUDATA	; write it
 	iny		; increment offset
-	lda (cmd_ptr),y	; load byte 6
+	lda cmd_buf,y	; load byte 6
 	sta PPUDATA	; write it
 	iny		; increment offset
-	lda (cmd_ptr),y	; load byte 7
+	lda cmd_buf,y	; load byte 7
 	sta PPUDATA	; write it
 	iny		; increment offset
-	lda (cmd_ptr),y	; load byte 8
+	lda cmd_buf,y	; load byte 8
 	sta PPUDATA	; write it
 	iny		; increment offset
 	dex		; decrement count of remaining blocks
 	bne -		; repeat until done
 
-	; point cmd_ptr after buffer
-done	jmp resync_cmd_ptr
+	; update cmd_off
+done	sty cmd_off	; store offset
+	rts
 	.pend
 
 nmi_fill .proc
 	; set nametable address
 	bit PPUSTATUS	; clear address latch
-	ldy #1		; cmd ptr offset
-	lda (cmd_ptr),y	; get nametable.H
+	iny		; increment offset
+	lda cmd_buf,y	; get nametable.H
 	sta PPUADDR	; write it
 	iny		; increment offset
-	lda (cmd_ptr),y	; get nametable.L
+	lda cmd_buf,y	; get nametable.L
 	sta PPUADDR	; write it
 	iny		; increment offset
 
 	; get counter and fill byte
-	lda (cmd_ptr),y	; get counter
+	lda cmd_buf,y	; get counter
 	tax		; put in X
 	iny		; increment offset
-	lda (cmd_ptr),y	; get fill byte
-	tay		; put in Y
+	lda cmd_buf,y	; get fill byte
+	iny		; increment offset
+	sty cmd_off	; save offset
+	tay		; put fill byte in Y
 
 	; bypass early exhaustion checks for count == 0 (256 bytes)
 	cpx #0		; count == 0?
@@ -222,34 +230,33 @@ unroll	sty PPUDATA	; write byte 1
 	dex		; decrement remaining count
 	bne unroll	; repeat until done
 
-	; point cmd_ptr after buffer
-done	ldy #5		; bytes in command
-	jmp resync_cmd_ptr
+done	rts
 	.pend
 
 nmi_scatter .proc
 	; get counter
-	ldy #1		; cmd ptr offset
-	lda (cmd_ptr),y	; get counter
+	iny		; increment offset
+	lda cmd_buf,y	; get counter
 	tax		; put in X
 	iny		; increment offset
 
 	; copy items
 -	bit PPUSTATUS	; clear address latch
-	lda (cmd_ptr),y	; get nametable.H
+	lda cmd_buf,y	; get nametable.H
 	sta PPUADDR	; write it
 	iny		; increment offset
-	lda (cmd_ptr),y	; get nametable.L
+	lda cmd_buf,y	; get nametable.L
 	sta PPUADDR	; write it
 	iny		; increment offset
-	lda (cmd_ptr),y	; get data byte
+	lda cmd_buf,y	; get data byte
 	sta PPUDATA	; write it
 	iny		; increment offset
 	dex		; decrement counter
 	bne -		; continue until done
 
-	; point cmd_ptr after buffer
-	jmp resync_cmd_ptr
+	; update cmd_off
+	sty cmd_off	; store offset
+	rts
 	.pend
 
 .send

@@ -37,14 +37,14 @@ rand_state	.word ?
 
 .section bss
 .align $100
-cmd_buffer	.fill $100
+cmd_buf		.fill $100
 .send
 
 .strings instructions, 2, [format("  robotfindskitten v%s.%d", VERSION, nki_count), "     by Benjamin Gilbert", "       Original game by", "      Leonard Richardson", "   Released under the GPLv2", "", "", "In this game, you are robot.", "", "Your job is to find kitten.", "", "This task is complicated by", "the existence of various", "things which are not kitten.", "", "Robot must touch items to", "determine if they are kitten", "or not.", "", "The game ends when", "robotfindskitten.", "", "", "", "         PRESS START"]
 
 .section fixed
 start	.proc
-	.cp2 #cmd_buffer, cmd_ptr ; initialize command pointer
+	.cp2 #cmd_buf, cmd_ptr ; initialize command pointer
 	.cp2 #$c292, rand_state ; initialize random state
 	.cp #>NAMETABLE_0, nametable ; initialize nametable
 	.cp #$80, PPUCTRL ; configure PPU; enable NMI
@@ -256,7 +256,7 @@ run_nmi .proc
 	.cp #1, nmi_ready ; tell NMI handler to proceed
 -	lda nmi_ready	; wait until after NMI
 	bne -		; or loop
-	.cp2 #cmd_buffer, cmd_ptr ; reset buffer pointer
+	.cp2 #cmd_buf, cmd_ptr ; reset buffer pointer
 	rts
 	.pend
 
