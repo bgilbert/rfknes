@@ -25,6 +25,29 @@ nki_lines	.byte ?	; including leading/trailing border
 .send
 
 .section fixed
+; Pick a random NKI
+; Return:
+; tempA - the NKI
+; Clobbers: A, X
+rand_nki .proc
+again	jsr rand	; randomize high byte
+	and #>(nki_next_power_of_two - 1) ; mask off high bits
+	sta tempA + 1	; store high byte
+	cmp #>(nki_count - 1) ; compare to max index
+	beq hard	; branch if outcome uncertain
+	bpl again	; high byte too large?  try again
+	jsr rand	; randomize low byte
+	sta tempA	; store low byte
+	rts
+
+hard	jsr rand	; randomize low byte
+	cmp #<(nki_count - 1) ; compare to max index
+	beq +		; equal; we're safe
+	bpl again	; greater; try again
++	sta tempA	; store low byte
+	rts
+	.pend
+
 ; Print an NKI
 ; temp1 - high byte of nametable address; set high bit to draw at bottom
 ; tempA - NKI number
