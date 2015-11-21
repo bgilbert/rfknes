@@ -49,7 +49,8 @@ hard	jsr rand	; randomize low byte
 	.pend
 
 ; Print an NKI
-; temp1 - high byte of nametable address; set high bit to draw at bottom
+; nametable - high byte of nametable address
+; temp1 - $00 to draw at top; $80 to draw at bottom
 ; tempA - NKI number
 ; Returns:
 ; nki_ppu_addr - starting PPU address of NKI
@@ -84,8 +85,9 @@ print_nki .proc
 	sta temp2	; put in temp2
 	tax		; and X
 	.ccmd #CMD_COPY ; write draw command
-	lda temp1	; move combined arg to A; test high bit
-	bmi bottom	; branch if drawing at bottom
+	lda nametable	; get nametable high byte
+	bit temp1	; see whether we should draw at bottom
+	bmi bottom	; branch if so
 	.cerror >nki_offset_top > 0 ; assume high byte is 0
 	sta nki_ppu_addr + 1 ; save high byte
 	.cmd		; write to cmd
@@ -93,8 +95,7 @@ print_nki .proc
 	sta nki_ppu_addr; store to nki_ppu_addr
 	.cmd		; and cmd
 	jmp +		; done
-bottom	ora nki_off_hi - 1,x ; OR high byte into arg
-	and #$7f	; drop high bit
+bottom	ora nki_off_hi - 1,x ; OR high byte into address
 	sta nki_ppu_addr + 1 ; save high byte
 	.cmd		; write to cmd
 	lda nki_off_lo - 1,x ; load low byte

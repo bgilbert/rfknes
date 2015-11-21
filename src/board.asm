@@ -229,7 +229,7 @@ show_nki .proc
 	sta tempA + 1	; store argument
 
 	; select top/bottom of screen
-	lda nametable	; get nametable top
+	lda #0		; no flags
 	ldx cur_y	; get Y coord
 	cpx #(BOARD_Y_THRESHOLD + BOARD_Y_OFFSET) / 2 ; threshold
 	bpl +		; branch if top
