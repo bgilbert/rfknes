@@ -91,78 +91,92 @@ cmd_dispatch .proc
 	.pend
 
 nmi_poke .proc
-	iny		; increment offset
-	lda cmd_buf,y	; address low byte
+	; get addr + data and store it
+	lda cmd_buf + 1,y ; address low byte
 	sta nmi_addr	; store it
-	iny		; increment offset
-	lda cmd_buf,y	; address high byte
+	lda cmd_buf + 2,y ; address high byte
 	sta nmi_addr + 1 ; store it
-	iny		; increment offset
-	lda cmd_buf,y	; data byte
-	iny		; increment offset
+	lda cmd_buf + 3,y ; data byte
 	ldx #0		; offset for indirect addressing
 	sta (nmi_addr,x) ; store the byte
-	sty cmd_off	; store offset
+
+	; update offset
+	tya		; get offset
+	clc		; clear carry
+	adc #4		; add command size
+	sta cmd_off	; store offset
 	rts
 	.pend
 
 nmi_copy .proc
 	; set nametable address
 	bit PPUSTATUS	; clear address latch
-	iny		; increment offset
-	lda cmd_buf,y	; get nametable.H
+	lda cmd_buf + 1,y ; get nametable.H
 	sta PPUADDR	; write it
-	iny		; increment offset
-	lda cmd_buf,y	; get nametable.L
+	lda cmd_buf + 2,y ; get nametable.L
 	sta PPUADDR	; write it
-	iny		; increment offset
 
 	; get counter
-	lda cmd_buf,y	; get counter
+	lda cmd_buf + 3,y ; get counter
 	tax		; put in X
-	iny		; increment offset
 
-	; write data until multiple of 8 bytes remaining
+	; write data until multiple of 16 bytes remaining
+	tya		; get offset
+	clc		; clear carry
+	adc #4		; add size of header
+	tay		; put back in Y
 	bpl +		; start loop
 -	lda cmd_buf,y	; load byte
 	sta PPUDATA	; write it
 	dex		; decrement remaining count
 	iny		; increment offset
 	txa		; copy counter to A
-+	and #$07	; continue until a multiple of 8 bytes
++	and #$0f	; continue until a multiple of 16 bytes
 	bne -		; repeat until done
 
-	; write data 8 bytes at a time
+	; write data 16 bytes at a time
 	txa		; get remaining count
 	beq done	; skip if already done
-	lsr		; divide by 8
+	lsr		; divide by 16
+	lsr
 	lsr
 	lsr
 	tax		; and put it back
--	lda cmd_buf,y	; load byte 1
+-	lda cmd_buf,y	; load byte
 	sta PPUDATA	; write it
-	iny		; increment offset
-	lda cmd_buf,y	; load byte 2
+	lda cmd_buf + 1,y ; load byte
 	sta PPUDATA	; write it
-	iny		; increment offset
-	lda cmd_buf,y	; load byte 3
+	lda cmd_buf + 2,y ; load byte
 	sta PPUDATA	; write it
-	iny		; increment offset
-	lda cmd_buf,y	; load byte 4
+	lda cmd_buf + 3,y ; load byte
 	sta PPUDATA	; write it
-	iny		; increment offset
-	lda cmd_buf,y	; load byte 5
+	lda cmd_buf + 4,y ; load byte
 	sta PPUDATA	; write it
-	iny		; increment offset
-	lda cmd_buf,y	; load byte 6
+	lda cmd_buf + 5,y ; load byte
 	sta PPUDATA	; write it
-	iny		; increment offset
-	lda cmd_buf,y	; load byte 7
+	lda cmd_buf + 6,y ; load byte
 	sta PPUDATA	; write it
-	iny		; increment offset
-	lda cmd_buf,y	; load byte 8
+	lda cmd_buf + 7,y ; load byte
 	sta PPUDATA	; write it
-	iny		; increment offset
+	lda cmd_buf + 8,y ; load byte
+	sta PPUDATA	; write it
+	lda cmd_buf + 9,y ; load byte
+	sta PPUDATA	; write it
+	lda cmd_buf + 10,y ; load byte
+	sta PPUDATA	; write it
+	lda cmd_buf + 11,y ; load byte
+	sta PPUDATA	; write it
+	lda cmd_buf + 12,y ; load byte
+	sta PPUDATA	; write it
+	lda cmd_buf + 13,y ; load byte
+	sta PPUDATA	; write it
+	lda cmd_buf + 14,y ; load byte
+	sta PPUDATA	; write it
+	lda cmd_buf + 15,y ; load byte
+	sta PPUDATA	; write it
+	tya		; get offset
+	adc #16		; increment (assumes carry clear)
+	tay		; put back in Y
 	dex		; decrement count of remaining blocks
 	bne -		; repeat until done
 
@@ -174,22 +188,16 @@ done	sty cmd_off	; store offset
 nmi_fill .proc
 	; set nametable address
 	bit PPUSTATUS	; clear address latch
-	iny		; increment offset
-	lda cmd_buf,y	; get nametable.H
+	lda cmd_buf + 1,y ; get nametable.H
 	sta PPUADDR	; write it
-	iny		; increment offset
-	lda cmd_buf,y	; get nametable.L
+	lda cmd_buf + 2,y ; get nametable.L
 	sta PPUADDR	; write it
-	iny		; increment offset
 
 	; get counter and fill byte
-	lda cmd_buf,y	; get counter
+	lda cmd_buf + 3,y ; get counter
 	tax		; put in X
-	iny		; increment offset
-	lda cmd_buf,y	; get fill byte
-	iny		; increment offset
-	sty cmd_off	; save offset
-	tay		; put fill byte in Y
+	lda cmd_buf + 4,y ; get fill byte
+	tay		; put in Y
 
 	; bypass early exhaustion checks for count == 0 (256 bytes)
 	cpx #0		; count == 0?
@@ -230,27 +238,33 @@ unroll	sty PPUDATA	; write byte 1
 	dex		; decrement remaining count
 	bne unroll	; repeat until done
 
-done	rts
+	; update cmd_off
+done	lda cmd_off	; get offset
+	clc		; clear carry
+	adc #5		; add command size
+	sta cmd_off	; store back
+	rts
 	.pend
 
 nmi_scatter .proc
 	; get counter
-	iny		; increment offset
-	lda cmd_buf,y	; get counter
+	lda cmd_buf + 1,y ; get counter
 	tax		; put in X
-	iny		; increment offset
 
 	; copy items
+	iny		; update offset
+	iny
+	clc		; clear carry for loop
 -	bit PPUSTATUS	; clear address latch
 	lda cmd_buf,y	; get nametable.H
 	sta PPUADDR	; write it
-	iny		; increment offset
-	lda cmd_buf,y	; get nametable.L
+	lda cmd_buf + 1,y ; get nametable.L
 	sta PPUADDR	; write it
-	iny		; increment offset
-	lda cmd_buf,y	; get data byte
+	lda cmd_buf + 2,y ; get data byte
 	sta PPUDATA	; write it
-	iny		; increment offset
+	tya		; get offset
+	adc #3		; add item size (assumes carry clear)
+	tay		; update offset
 	dex		; decrement counter
 	bne -		; continue until done
 
