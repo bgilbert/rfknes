@@ -169,7 +169,7 @@ draw_board .proc
 	sta cur_x	; store
 	lda item_y,x	; get Y coordinate
 	sta cur_y	; store
-	jsr write_scatter_addr ; write address
+	jsr write_nametable_addr ; write address
 	lda item_glyph,x ; get glyph
 	.cmd		; store
 	dex		; decrement counter
@@ -184,7 +184,7 @@ draw_board .proc
 ; cur_x - X coordinate
 ; cur_y - Y coordinate
 ; Clobbers: A
-write_scatter_addr .proc
+write_nametable_addr .proc
 	lda cur_y	; get Y coordinate
 	lsr		; divide by 8
 	lsr

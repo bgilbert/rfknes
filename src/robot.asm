@@ -62,7 +62,7 @@ draw_robot .proc
 	ldy #0		; cmd_buffer offset
 	.ccmd #CMD_SCATTER ; scatter command
 	.ccmd #1	; just the robot
-	jsr write_scatter_addr ; write address
+	jsr write_nametable_addr ; write address
 	txa		; get glyph
 	.cmd		; write it
 	jmp resync_cmd_ptr
