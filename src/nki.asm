@@ -19,7 +19,6 @@
 ;
 
 .section zeropage
-ppu_addr	.word ?
 nki_ppu_addr	.word ?
 nki_lines	.byte ?	; including leading/trailing border
 cur_nki		.word ?
@@ -79,34 +78,40 @@ print_nki .proc
 	tay		; copy to Y
 	sta banknums,y	; switch bank, avoiding bus conflicts
 
-	; calculate PPU address
+	; calculate PPU address and write header
 	ldy #0		; index of line count in string
 	lda (tempA),y	; get number of lines
 	sta temp2	; put in temp2
 	tax		; and X
-	clc		; clear carry
-	adc #2		; add border lines
-	sta nki_lines	; and put in nki_lines
+	.ccmd #CMD_COPY ; write draw command
 	lda temp1	; move combined arg to A; test high bit
 	bmi bottom	; branch if drawing at bottom
 	.cerror >nki_offset_top > 0 ; assume high byte is 0
-	sta ppu_addr + 1; write high byte
-	sta nki_ppu_addr + 1 ; to two places
+	sta nki_ppu_addr + 1 ; save high byte
+	.cmd		; write to cmd
 	lda #<nki_offset_top ; load low byte
-	sta ppu_addr	; store to ppu_addr
-	sta nki_ppu_addr; and nki_ppu_addr
+	sta nki_ppu_addr; store to nki_ppu_addr
+	.cmd		; and cmd
 	jmp +		; done
 bottom	ora nki_off_hi - 1,x ; OR high byte into arg
 	and #$7f	; drop high bit
-	sta ppu_addr + 1; write high byte
-	sta nki_ppu_addr + 1 ; twice
+	sta nki_ppu_addr + 1 ; save high byte
+	.cmd		; write to cmd
 	lda nki_off_lo - 1,x ; load low byte
-	sta ppu_addr	; write low byte
-	sta nki_ppu_addr; twice
+	sta nki_ppu_addr; save low byte
+	.cmd		; write to cmd
++	lda temp2	; get line count
+	clc		; clear carry
+	adc #2		; add border lines
+	sta nki_lines	; and put in nki_lines
+	asl		; multiply by 32
+	asl
+	asl
+	asl
+	asl
+	.cmd		; write to cmd
 
 	; draw top row of border
-+	ldx #32		; one line
-	jsr write_copy_header ; write header
 	.ccmd #0	; write space
 	.ccmd #218	; write top-left corner
 	lda #196	; load horizontal line
@@ -129,8 +134,7 @@ next	lda temp1	; get line length
 	inc tempA + 1	; yes
 
 	; print line
-+	jsr next_line	; write header
-	.ccmd #0	; write space
++	.ccmd #0	; write space
 	.ccmd #179	; vertical line
 	jsr resync_cmd_ptr ; update cmd_ptr
 	ldy #0		; first char of string, first byte of cmd_ptr
@@ -161,7 +165,6 @@ next	lda temp1	; get line length
 	bne next	; loop until zero
 
 	; draw line footer
-	jsr next_line	; write header
 	.ccmd #0	; write space
 	.ccmd #192	; write bottom-left corner
 	lda #196	; load horizontal line
@@ -190,40 +193,6 @@ nki_off_hi
 	.byte >(nki_offset_bot + 32 * 2)
 	.byte >(nki_offset_bot + 32 * 1)
 	.byte >(nki_offset_bot + 32 * 0)
-
-; Write a COPY header
-; X - number of characters
-; Y [in/out] - offset into cmd_ptr
-; ppu_addr - starting PPU address
-; Clobbers: A
-write_copy_header .proc
-	.ccmd #CMD_COPY ; write draw command
-	lda ppu_addr + 1 ; nametable base (high byte)
-	.cmd		; write it
-	lda ppu_addr	; nametable base (low byte)
-	.cmd		; write it
-	txa		; get count
-	.cmd		; write it
-	rts
-	.pend
-
-; Resync cmd_ptr, wait for VBLANK, increment ppu_addr by 32, and write
-; a COPY header for one line
-; Y [in/out] - offset into cmd_ptr
-; Clobbers: A, X
-next_line .proc
-	jsr resync_cmd_ptr ; resync cmd_ptr
-	jsr run_nmi	; wait for frame
-	lda ppu_addr	; nametable base (low byte)
-	clc		; clear carry
-	adc #32		; add one line
-	sta ppu_addr	; write back
-	bcc +		; need to carry?
-	inc ppu_addr + 1 ; yes
-+	ldx #32		; one line
-	ldy #0		; reset cmd_buffer offset
-	bpl write_copy_header ; write the header
-	.pend
 
 ; Clear an NKI
 ; nki_ppu_addr - starting PPU address of NKI
