@@ -57,7 +57,7 @@ hard	jsr rand	; randomize low byte
 ; nki_lines - number of lines in NKI, including border
 print_nki .proc
 	nki_first_row = 2
-	nki_last_row = 27
+	nki_last_row = 26
 
 	; get string address and bank number
 	asl tempA	; get table offset by doubling nki_num: low
@@ -92,7 +92,7 @@ print_nki .proc
 	lda #nki_first_row ; Y coord for top
 	bne +		; done
 bottom	lda #nki_last_row ; Y coord for bottom
-	clc		; clear carry
+	sec		; set carry
 	sbc temp2	; subtract number of rows we need
 +	sta cur_y	; store Y coordinate
 	sta nki_y	; and copy to nki_y
