@@ -33,6 +33,7 @@ bank = 0
 bank_size = 0
 nki_num = 0
 for nki in sys.stdin:
+    nki = nki.replace('--', '-')
     lines = wrapper.wrap(nki)
     assert len(lines) <= 5
 
