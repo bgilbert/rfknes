@@ -30,6 +30,8 @@ nametable	.byte ?		; top byte
 cur_x		.byte ?
 cur_y		.byte ?
 bit_mask	.byte ?
+start_y		.byte ?
+end_y		.byte ?
 .send
 
 .section bss
@@ -121,7 +123,7 @@ coord	jsr rand	; X coordinate
 	dey		; decrement index
 	bpl coord	; continue until done
 
-	jmp draw_board	; draw the board
+	jmp draw_entire_board ; draw board
 	.pend
 
 ; Get bitmap position for specified coordinate
@@ -152,27 +154,55 @@ get_bit_position .proc
 	rts
 	.pend
 
-; Draw the board
+; Draw the entire board
 ; nametable - target nametable
 ; Clobbers: A, X, Y, cur_x, cur_y
+draw_entire_board .proc
+	.cp #0, start_y	; set lower bound of board
+	.cp #29, end_y	; set upper bound of board
+	jmp draw_board
+	.pend
+
+; Draw the board
+; nametable - target nametable
+; start_y - minimum Y to draw
+; end_y - minimum Y not to draw
+; Clobbers: A, X, Y, cur_x, cur_y
 draw_board .proc
+	; Count items in range
+	ldx #0		; number of items in range
+	ldy #NUM_ITEMS - 1 ; item index
+-	lda item_y,y	; get Y coordinate
+	cmp start_y	; compare against minimum
+	bmi +		; skip if less
+	cmp end_y	; compare against maximum
+	bpl +		; skip if greater
+	beq +		; or equal
+	inx		; increment count
++	dey		; decrement index
+	bpl -		; continue until done
+
 	; Set up command
 	ldy #0		; cmd_buffer offset
 	.ccmd #CMD_SCATTER ; scatter command
-	lda #NUM_ITEMS	; load item count
+	txa		; get item count
 	.cmd		; store
-	tax		; copy to X
-	dex		; point to last item
 
 	; Write items
--	lda item_x,x	; get X coordinate
+	ldx #NUM_ITEMS - 1 ; init counter
+-	lda item_y,x	; get Y coordinate
+	cmp start_y	; compare against minimum
+	bmi +		; skip if less
+	cmp end_y	; compare against maximum
+	bpl +		; skip if greater
+	beq +		; or equal
+	sta cur_y	; store Y coordinate
+	lda item_x,x	; get X coordinate
 	sta cur_x	; store
-	lda item_y,x	; get Y coordinate
-	sta cur_y	; store
 	jsr write_nametable_addr ; write address
 	lda item_glyph,x ; get glyph
 	.cmd		; store
-	dex		; decrement counter
++	dex		; decrement counter
 	bpl -		; continue until done
 
 	jmp resync_cmd_ptr
@@ -210,7 +240,7 @@ end_board .proc
 -	sta item_glyph,x ; store glyph
 	dex		; decrement counter
 	bpl -		; continue until done
-	jmp draw_board	; redraw
+	jmp draw_entire_board ; redraw
 	.pend
 
 ; Show an NKI

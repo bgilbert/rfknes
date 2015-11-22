@@ -163,6 +163,11 @@ do_input .proc
 	beq +		; no; continue
 	stx temp1	; save X coord
 	sty temp2	; save Y coord
+	clc		; clear carry
+	adc nki_y	; compute ending Y coord of current NKI
+	sta end_y	; store for board redraw
+	lda nki_y	; get starting Y coord
+	sta start_y	; and store it
 	jsr clear_nki	; clear NKI
 	jsr draw_board	; redraw board
 	jsr run_nmi	; draw frame
