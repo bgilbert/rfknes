@@ -176,28 +176,4 @@ next	lda temp1	; get line length
 	 ; update cmd_ptr
 	jmp resync_cmd_ptr
 	.pend
-
-; Clear an NKI
-; nametable - target nametable
-; nki_y - starting line of NKI
-; nki_lines - number of lines in NKI, including border
-; Sets nki_lines to zero
-; Clobbers: A, Y, cur_x, cur_y
-clear_nki .proc
-	ldy #0		; base of cmd_ptr
-	.ccmd #CMD_FILL	; write draw command
-	.cp #0, cur_x	; store X coord
-	.cp nki_y, cur_y ; store Y coord
-	jsr write_nametable_addr ; write address
-	lda nki_lines	; get line count
-	asl		; multiply by 32
-	asl
-	asl
-	asl
-	asl
-	.cmd		; write it
-	.ccmd #0	; write fill byte
-	sta nki_lines	; zero out nki_lines
-	jmp resync_cmd_ptr ; resync
-	.pend
 .send

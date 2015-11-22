@@ -168,7 +168,8 @@ do_input .proc
 	sta end_y	; store for board redraw
 	lda nki_y	; get starting Y coord
 	sta start_y	; and store it
-	jsr clear_nki	; clear NKI
+	jsr clear_lines	; clear NKI
+	.cp #0, nki_lines ; clear NKI indication
 	jsr draw_board	; redraw board
 	jsr run_nmi	; draw frame
 	ldx temp1	; restore X coord
@@ -238,7 +239,13 @@ pause	.proc
 next_board .proc
 	lda nki_lines	; see if an NKI is showing
 	beq +		; no; continue
-	jsr clear_nki	; clear NKI
+	clc		; clear carry
+	adc nki_y	; compute end Y coord of NKI
+	sta end_y	; and store it
+	lda nki_y	; get start Y coord
+	sta start_y	; and store it
+	jsr clear_lines	; clear NKI
+	.cp #0, nki_lines ; clear NKI indication
 	jsr run_nmi	; wait for frame
 +	jsr end_board	; clear board
 	lda robot_x	; load X coord

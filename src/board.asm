@@ -67,6 +67,30 @@ clear_nametable .proc
 	rts
 	.pend
 
+; Clear specific lines
+; nametable - target nametable
+; start_y - first line to clear
+; end_y - first line not to clear
+; Clobbers: A, Y, cur_x, cur_y
+clear_lines .proc
+	ldy #0		; base of cmd_ptr
+	.ccmd #CMD_FILL	; write draw command
+	.cp #0, cur_x	; store X coord
+	.cp start_y, cur_y ; store Y coord
+	jsr write_nametable_addr ; write address
+	lda end_y	; get end Y coord
+	sec		; set carry
+	sbc start_y	; compute number of lines
+	asl		; multiply by 32
+	asl
+	asl
+	asl
+	asl
+	.cmd		; write it
+	.ccmd #0	; write fill byte
+	jmp resync_cmd_ptr ; resync
+	.pend
+
 ; Generate new board
 make_board .proc
 	; Pick NKI numbers
