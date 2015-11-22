@@ -60,14 +60,14 @@ print_nki .proc
 	nki_last_row = 26
 
 	; get string address and bank number
-	asl tempA	; get table offset by doubling nki_num: low
-	rol tempA + 1	; and high
-	.cp #<nki_table, tempB ; copy low byte of table base to tempB.L
-	lda #>nki_table	; load high byte
-	clc		; clear carry
-	adc tempA + 1	; add high byte of table offset
+	lda tempA	; get NKI number low byte
+	asl		; double for table offset
+	tay		; put in Y
+	lda tempA + 1	; get NKI number high byte
+	rol		; double for table offset
+	adc #>nki_table	; add high byte of table base (assumes carry clear)
 	sta tempB + 1	; and store it to tempB.H
-	ldy tempA	; get low byte of offset for indirect indexed
+	.cp #<nki_table, tempB ; copy low byte of table base to tempB.L
 	lda (tempB),y	; load low byte of string address
 	sta tempA	; store to tempA.L
 	iny		; increment offset for entry.H
