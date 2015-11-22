@@ -206,8 +206,13 @@ draw_board .proc
 +	dey		; decrement index
 	bpl -		; continue until done
 
+	; If there are no items, we're done
+	cpx #0		; is count zero?
+	bne +		; no: continue
+	rts		; else return
+
 	; Set up command
-	ldy #0		; cmd_buffer offset
++	ldy #0		; cmd_buffer offset
 	.ccmd #CMD_SCATTER ; scatter command
 	txa		; get item count
 	.cmd		; store
