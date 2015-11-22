@@ -19,7 +19,7 @@
 ;
 
 .section zeropage
-nki_ppu_addr	.word ?
+nki_y		.byte ? ; Y coordinate of leading border
 nki_lines	.byte ?	; including leading/trailing border
 cur_nki		.word ?
 .send
@@ -53,9 +53,12 @@ hard	jsr rand	; randomize low byte
 ; temp1 - $00 to draw at top; $80 to draw at bottom
 ; tempA - NKI number
 ; Returns:
-; nki_ppu_addr - starting PPU address of NKI
+; nki_y - Y coordinate of leading border
 ; nki_lines - number of lines in NKI, including border
 print_nki .proc
+	nki_first_row = 2
+	nki_last_row = 27
+
 	; get string address and bank number
 	asl tempA	; get table offset by doubling nki_num: low
 	rol tempA + 1	; and high
@@ -83,25 +86,19 @@ print_nki .proc
 	ldy #0		; index of line count in string
 	lda (tempA),y	; get number of lines
 	sta temp2	; put in temp2
-	tax		; and X
 	.ccmd #CMD_COPY ; write draw command
-	lda nametable	; get nametable high byte
 	bit temp1	; see whether we should draw at bottom
 	bmi bottom	; branch if so
-	.cerror >nki_offset_top > 0 ; assume high byte is 0
-	sta nki_ppu_addr + 1 ; save high byte
-	.cmd		; write to cmd
-	lda #<nki_offset_top ; load low byte
-	sta nki_ppu_addr; store to nki_ppu_addr
-	.cmd		; and cmd
-	jmp +		; done
-bottom	ora nki_off_hi - 1,x ; OR high byte into address
-	sta nki_ppu_addr + 1 ; save high byte
-	.cmd		; write to cmd
-	lda nki_off_lo - 1,x ; load low byte
-	sta nki_ppu_addr; save low byte
-	.cmd		; write to cmd
-+	lda temp2	; get line count
+	lda #nki_first_row ; Y coord for top
+	bne +		; done
+bottom	lda #nki_last_row ; Y coord for bottom
+	clc		; clear carry
+	sbc temp2	; subtract number of rows we need
++	sta cur_y	; store Y coordinate
+	sta nki_y	; and copy to nki_y
+	.cp #0, cur_x	; store X coordinate
+	jsr write_nametable_addr ; write start address
+	lda temp2	; get line count
 	clc		; clear carry
 	adc #2		; add border lines
 	sta nki_lines	; and put in nki_lines
@@ -180,33 +177,18 @@ next	lda temp1	; get line length
 	jmp resync_cmd_ptr
 	.pend
 
-nki_offset_top = 2 * 32
-nki_offset_bot = 21 * 32
-nki_off_lo
-	.byte <(nki_offset_bot + 32 * 4)
-	.byte <(nki_offset_bot + 32 * 3)
-	.byte <(nki_offset_bot + 32 * 2)
-	.byte <(nki_offset_bot + 32 * 1)
-	.byte <(nki_offset_bot + 32 * 0)
-nki_off_hi
-	.byte >(nki_offset_bot + 32 * 4)
-	.byte >(nki_offset_bot + 32 * 3)
-	.byte >(nki_offset_bot + 32 * 2)
-	.byte >(nki_offset_bot + 32 * 1)
-	.byte >(nki_offset_bot + 32 * 0)
-
 ; Clear an NKI
-; nki_ppu_addr - starting PPU address of NKI
+; nametable - target nametable
+; nki_y - starting line of NKI
 ; nki_lines - number of lines in NKI, including border
 ; Sets nki_lines to zero
-; Clobbers: A, Y
+; Clobbers: A, Y, cur_x, cur_y
 clear_nki .proc
 	ldy #0		; base of cmd_ptr
 	.ccmd #CMD_FILL	; write draw command
-	lda nki_ppu_addr + 1 ; nametable base (high byte)
-	.cmd		; write it
-	lda nki_ppu_addr ; nametable base (low byte)
-	.cmd		; write it
+	.cp #0, cur_x	; store X coord
+	.cp nki_y, cur_y ; store Y coord
+	jsr write_nametable_addr ; write address
 	lda nki_lines	; get line count
 	asl		; multiply by 32
 	asl
