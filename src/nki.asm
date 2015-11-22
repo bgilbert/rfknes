@@ -50,8 +50,8 @@ hard	jsr rand	; randomize low byte
 
 ; Print an NKI
 ; nametable - high byte of nametable address
+; cur_nki - NKI number
 ; temp1 - $00 to draw at top; $80 to draw at bottom
-; tempA - NKI number
 ; Returns:
 ; nki_y - Y coordinate of leading border
 ; nki_lines - number of lines in NKI, including border
@@ -60,10 +60,10 @@ print_nki .proc
 	nki_last_row = 26
 
 	; get string address and bank number
-	lda tempA	; get NKI number low byte
+	lda cur_nki	; get NKI number low byte
 	asl		; double for table offset
 	tay		; put in Y
-	lda tempA + 1	; get NKI number high byte
+	lda cur_nki + 1	; get NKI number high byte
 	rol		; double for table offset
 	adc #>nki_table	; add high byte of table base (assumes carry clear)
 	sta tempB + 1	; and store it to tempB.H

@@ -283,9 +283,9 @@ show_nki .proc
 	asl		; multiply by 2
 	tax		; put back in X
 	lda nki_num,x	; get nki_num.L
-	sta tempA	; store argument
+	sta cur_nki	; store argument
 	lda nki_num + 1,x ; get nki_num.H
-	sta tempA + 1	; store argument
+	sta cur_nki + 1	; store argument
 
 	; select top/bottom of screen
 	lda #0		; no flags
