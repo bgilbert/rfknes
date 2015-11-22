@@ -33,6 +33,8 @@ VERSION = "0.1"
 nmi_ready	.byte ?
 cmd_ptr		.word ?
 rand_state	.word ?
+prev_nki_y	.byte ?
+prev_nki_lines	.byte ?
 .send
 
 .section bss
@@ -158,8 +160,70 @@ do_input .proc
 	bmi +		; no
 	ldy robot_y	; or reset
 
-	; clear NKI if showing
-+	lda nki_lines	; see if an NKI is showing
+	; check for new item
++	stx cur_x	; X coord argument
+	sty cur_y	; Y coord argument
+	jsr get_bit_position ; get bitmap index
+	lda item_bitmap,x ; load bitmap byte
+	bit bit_mask	; test bit
+	beq clear	; jump if clear
+
+	; check whether new item is kitten
+	jsr test_kitten	; is item kitten?
+	bne +		; jump if not kitten
+	jmp next_board	; kitten; replace board and return
+
+	; if new item is NKI with no current NKI showing, handle and return
++	lda nki_lines	; see if we're currently showing an NKI
+	bne +		; yes; continue
+	jmp show_nki	; else show NKI and return
+
+	; need to replace current NKI
++	sta prev_nki_lines ; save current NKI line count
+	lda nki_y	; get current NKI Y coord
+	sta prev_nki_y	; save it
+	jsr show_nki	; draw new NKI
+	lda #16		; mid-screen threshold
+	cmp prev_nki_y	; compare to previous Y
+	bpl top		; previous NKI at top of screen
+	cmp nki_y	; compare to current Y
+	bpl mixed	; mixed top and bottom
+	; both at bottom; if new nki_y > old, fix difference
+	lda prev_nki_y	; get old top
+	cmp nki_y	; compare to new top
+	bpl return	; new <= old; done
+	sta start_y	; start Y coord for clearing
+	.cp nki_y, end_y ; end Y coord for clearing
+	bne redraw	; redraw
+top	cmp nki_y	; compare to current NKI
+	bmi mixed	; mixed top and bottom
+	; both at top; if new nki_lines < old, fix difference
+	lda nki_lines	; get new line count
+	cmp prev_nki_lines ; compare to old line count
+	bpl return	; new >= old; done
+	clc		; clear carry
+	adc nki_y	; add new Y coord
+	sta start_y	; start Y coord for clearing
+	lda prev_nki_lines ; get old line count
+	adc prev_nki_y	; add old Y coord
+	sta end_y	; end Y coord for clearing
+	bne redraw	; redraw items
+	; mixed; completely clean old NKI
+mixed	lda prev_nki_y	; start Y coord for redraw
+	sta start_y	; store it
+	clc		; clear carry
+	adc prev_nki_lines ; add length
+	sta end_y	; store end line
+	jsr run_nmi	; wait for frame, since draw + clear is too much
+			; work for one frame
+redraw	jsr clear_lines	; clear
+	jsr draw_board	; redraw items
+return	rts
+
+	; no new NKI; clear old NKI if showing
+clear	ldx cur_x	; restore X coord
+	ldy cur_y	; restore Y coord
+	lda nki_lines	; see if an NKI is showing
 	beq +		; no; continue
 	stx temp1	; save X coord
 	sty temp2	; save Y coord
@@ -173,24 +237,10 @@ do_input .proc
 	jsr draw_board	; redraw board
 	jsr run_nmi	; draw frame
 	ldx temp1	; restore X coord
-	ldy temp2	; retore Y coord
-
-	; check for new item
-+	stx cur_x	; X coord argument
-	sty cur_y	; Y coord argument
-	jsr get_bit_position ; get bitmap index
-	lda item_bitmap,x ; load bitmap byte
-	bit bit_mask	; test bit
-	beq update	; continue if clear
-	jsr test_kitten	; is item kitten?
-	beq +		; jump if kitten
-	jmp show_nki	; NKI; draw and return
-+	jmp next_board	; kitten; replace board and return
+	ldy temp2	; restore Y coord
 
 	; update state
-update	ldx cur_x	; get new X coord
-	ldy cur_y	; get new Y coord
-	lda robot_x	; get old X coord
++	lda robot_x	; get old X coord
 	sta cur_x	; store argument
 	lda robot_y	; get new Y coord
 	sta cur_y	; store argument
