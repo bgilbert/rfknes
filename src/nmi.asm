@@ -27,6 +27,7 @@ CMD_FILL		= 3	; PPU address (2, high byte first),
 				; count (1) (#0 == 256 bytes), byte
 CMD_SCATTER		= 4	; count (1), [PPU address (2, high byte first),
 				; byte]
+NUM_CMDS		= 5	; number of commands
 
 .section zeropage
 nmi_addr	.word ?
@@ -40,6 +41,7 @@ nmi_table
 	.word nmi_copy - 1
 	.word nmi_fill - 1
 	.word nmi_scatter - 1
+	.word reset - 1		; must be last!
 
 nmi	.proc
 	pha		; push A
@@ -56,10 +58,13 @@ nmi	.proc
 	; walk command buffer
 	ldy #0		; load new command offset
 	sty cmd_off	; and store it
-	beq +		; start loop
--	jsr cmd_dispatch; dispatch
+	beq next	; start loop
+-	cmp #NUM_CMDS	; out-of-bounds command?
+	bmi +		; no; jump
+	lda #NUM_CMDS	; reset handler
++	jsr cmd_dispatch; dispatch
 	ldy cmd_off	; load offset into buffer
-+	lda cmd_buf,y	; get command
+next	lda cmd_buf,y	; get command
 	bne -		; continue until command 0
 
 	; reset scroll after update
