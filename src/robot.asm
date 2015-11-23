@@ -59,12 +59,13 @@ place_robot .proc
 ; cur_y - Y coordinate
 ; Clobbers: A, Y
 draw_robot .proc
-	ldy #0		; cmd_buffer offset
+	ldy cmd_off	; cmd_buf offset
 	.ccmd #CMD_SCATTER ; scatter command
 	.ccmd #1	; just the robot
 	jsr write_nametable_addr ; write address
 	txa		; get glyph
 	.cmd		; write it
-	jmp resync_cmd_ptr
+	sty cmd_off	; update offset
+	rts
 	.pend
 .send

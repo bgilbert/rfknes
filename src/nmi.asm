@@ -29,7 +29,6 @@ CMD_SCATTER		= 4	; count (1), [PPU address (2, high byte first),
 				; byte]
 
 .section zeropage
-cmd_off		.byte ?
 nmi_addr	.word ?
 .send
 

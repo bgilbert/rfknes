@@ -31,7 +31,7 @@ VERSION = "0.1"
 
 .section zeropage
 nmi_ready	.byte ?
-cmd_ptr		.word ?
+cmd_off		.byte ?
 rand_state	.word ?
 prev_nki_y	.byte ?
 prev_nki_lines	.byte ?
@@ -46,7 +46,6 @@ cmd_buf		.fill $100
 
 .section fixed
 start	.proc
-	.cp2 #cmd_buf, cmd_ptr ; initialize command pointer
 	.cp2 #$c292, rand_state ; initialize random state
 	.cp #>NAMETABLE_0, nametable ; initialize nametable
 	.cp #$80, PPUCTRL ; configure PPU; enable NMI
@@ -65,13 +64,12 @@ start	.proc
 	.print NAMETABLE_0, 2, 2, instructions
 
 	; enable render
-	ldy #0		; buffer index
+	ldy #0		; init cmd_buf offset
 	.ccmd #CMD_POKE	; command
 	.ccmd #<PPUMASK	; addr low byte
 	.ccmd #>PPUMASK	; addr high byte
 	.ccmd #PPUMASK_NORMAL ; enable rendering
-
-	jsr resync_cmd_ptr ; resync
+	sty cmd_off	; update offset
 	jsr run_nmi	; draw
 
 	; wait for Start button; generate board
@@ -262,12 +260,12 @@ clear	ldx cur_x	; restore X coord
 
 pause	.proc
 	; gray out screen
-	ldy #0		; buffer index
+	ldy cmd_off	; buffer offset
 	.ccmd #CMD_POKE	; command
 	.ccmd #<PPUMASK	; addr low byte
 	.ccmd #>PPUMASK	; addr high byte
 	.ccmd #(PPUMASK_NORMAL | $1) ; rendering enabled; grayscale
-	jsr resync_cmd_ptr
+	sty cmd_off	; update offset
 
 	; wait for Start
 -	jsr run_nmi	; draw
@@ -277,12 +275,13 @@ pause	.proc
 	beq -		; continue unless pressed
 
 	; ungray screen
-	ldy #0		; buffer index
+	ldy cmd_off	; buffer offset
 	.ccmd #CMD_POKE	; command
 	.ccmd #<PPUMASK	; addr low byte
 	.ccmd #>PPUMASK	; addr high byte
 	.ccmd #PPUMASK_NORMAL ; rendering enabled
-	jmp resync_cmd_ptr
+	sty cmd_off	; update offset
+	rts
 	.pend
 
 ; Show next board
@@ -312,14 +311,14 @@ next_board .proc
 ; Clobbers: A, Y
 run_nmi .proc
 	; terminate buffer
-	ldy #0		; buffer index
+	ldy cmd_off	; buffer index
 	.ccmd #CMD_EOF	; write command
 
 	; enable NMI and wait for it
 	.cp #1, nmi_ready ; tell NMI handler to proceed
 -	lda nmi_ready	; wait until after NMI
 	bne -		; or loop
-	.cp2 #cmd_buf, cmd_ptr ; reset buffer pointer
+	.cp #0, cmd_off	; reset cmd_buf offset
 	rts
 	.pend
 
@@ -349,7 +348,7 @@ rand	.proc
 
 ; Store A to command buffer indexed by Y; increment Y
 cmd	.macro
-	sta (cmd_ptr),y
+	sta cmd_buf,y
 	iny
 	.endm
 
@@ -359,14 +358,4 @@ ccmd	.macro
 	lda \1
 	.cmd
 	.endm
-
-; Add Y to cmd_ptr
-; clobbers: A
-resync_cmd_ptr .proc
-	tya		; get offset into cmd_ptr
-	clc		; clear carry
-	adc cmd_ptr	; add to pointer
-	sta cmd_ptr	; and write back
-	rts
-	.pend
 .send

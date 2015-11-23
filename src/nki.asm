@@ -88,6 +88,7 @@ print_nki .proc
 	ldy #0		; index of line count in string
 	lda (tempA),y	; get number of lines
 	sta temp2	; put in temp2
+	ldy cmd_off	; cmd_buffer offset
 	.ccmd #CMD_COPY ; write draw command
 	bit print_flags	; see whether we should draw at bottom
 	bmi bottom	; branch if so
@@ -136,16 +137,30 @@ next	lda temp1	; get line length
 	; print line
 +	.ccmd #0	; write space
 	.ccmd #179	; vertical line
-	jsr resync_cmd_ptr ; update cmd_ptr
-	ldy #0		; first char of string, first byte of cmd_ptr
+	sty cmd_off	; update offset
+	; store cmd_buf + cmd_off in tempB so load/store can both be Y-indexed
+	lda #<cmd_buf	; get cmd_buf.L
+	clc		; clear carry
+	adc cmd_off	; add current offset
+	sta tempB	; store to tempB.L
+	ldy #>cmd_buf	; get cmd_buf.H
+	bcc +		; need to carry?
+	iny		; yes; carry
++	sty tempB + 1	; store to tempB.H
+	ldy #0		; first char of string, first byte of (tempB)
 	bpl +		; start loop
--	.cmd		; store character; increment index
+-	sta (tempB),y	; store character
+	iny		; increment index
 +	lda (tempA),y	; load character
 	bne -		; continue until NUL
 	sty temp1	; save line length
+	tya		; and put in A
+	clc		; clear carry
+	adc cmd_off	; add to cmd_off to resync global offset
+	tay		; put back in Y
 
 	; fill, draw trailer
-	tya		; copy count to accumulator
+	lda temp1	; copy count to accumulator
 	eor #$ff	; complement for negation
 	clc		; clear carry
 	adc #29		; add max characters per line, plus 1 for negation
@@ -175,7 +190,8 @@ next	lda temp1	; get line length
 	.ccmd #217	; write bottom-right corner
 	.ccmd #0	; write space
 
-	 ; update cmd_ptr
-	jmp resync_cmd_ptr
+	 ; update cmd_off
+	sty cmd_off	; update offset
+	rts
 	.pend
 .send

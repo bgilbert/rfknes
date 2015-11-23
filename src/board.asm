@@ -47,7 +47,7 @@ item_bitmap	.fill (32 * 30) / 8
 ; nametable - target nametable
 clear_nametable .proc
 	ldx #3		; iteration counter
--	ldy #0		; cmd_buffer offset
+-	ldy cmd_off	; cmd_buf offset
 	.ccmd #CMD_FILL	; fill command
 	txa		; get counter
 	clc		; clear carry
@@ -60,7 +60,7 @@ clear_nametable .proc
 	lda #192	; clearing 192 bytes
 +	.cmd		; write count
 	.ccmd #0	; write empty glyph
-	jsr resync_cmd_ptr ; resync
+	sty cmd_off	; update offset
 	jsr run_nmi	; draw
 	dex		; decrement counter
 	bpl -		; continue until done
@@ -73,7 +73,7 @@ clear_nametable .proc
 ; end_y - first line not to clear
 ; Clobbers: A, Y, cur_x, cur_y
 clear_lines .proc
-	ldy #0		; base of cmd_ptr
+	ldy cmd_off	; cmd_buf offset
 	.ccmd #CMD_FILL	; write draw command
 	.cp #0, cur_x	; store X coord
 	.cp start_y, cur_y ; store Y coord
@@ -88,7 +88,8 @@ clear_lines .proc
 	asl
 	.cmd		; write it
 	.ccmd #0	; write fill byte
-	jmp resync_cmd_ptr ; resync
+	sty cmd_off	; update offset
+	rts
 	.pend
 
 ; Generate new board
@@ -212,7 +213,7 @@ draw_board .proc
 	rts		; else return
 
 	; Set up command
-+	ldy #0		; cmd_buffer offset
++	ldy cmd_off	; cmd_buf offset
 	.ccmd #CMD_SCATTER ; scatter command
 	txa		; get item count
 	.cmd		; store
@@ -234,11 +235,12 @@ draw_board .proc
 +	dex		; decrement counter
 	bpl -		; continue until done
 
-	jmp resync_cmd_ptr
+	sty cmd_off	; update offset
+	rts
 	.pend
 
-; Write nametable address into cmd_buffer
-; Y [in/out] - cmd_ptr offset
+; Write nametable address into cmd_buf
+; Y [in/out] - cmd_buf offset
 ; nametable - target nametable
 ; cur_x - X coordinate
 ; cur_y - Y coordinate
