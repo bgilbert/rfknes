@@ -323,7 +323,7 @@ run_nmi .proc
 	.pend
 
 irq	.proc
-	rti
+	jmp reset	; can't happen, so give up
 	.pend
 
 ; Generate "random" number
