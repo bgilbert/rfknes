@@ -148,7 +148,7 @@ reset	.proc
 	lda #0
 	sta PPUMASK	; disable rendering
 
-	; Clear RAM
+	; Clear CPU RAM
 	sta tempA	; low byte of base address
 	sta tempA + 1	; high byte of base address
 	ldx #0		; high byte of base address (reg)
@@ -164,6 +164,27 @@ reset	.proc
 	; Wait for rest of PPU warmup
 -	bit PPUSTATUS	; check PPUSTATUS VBL
 	bpl -		; loop until set
+
+	; Clear PPU RAM
+	lda #0		; get zero
+	sta PPUADDR	; store high byte
+	sta PPUADDR	; store low byte
+	ldx #0		; counter high byte
+	ldy #0		; counter low byte
+-	sta PPUDATA	; write byte
+	iny		; increment counter.L
+	bne -		; continue until low byte overflow
+	inx		; increment counter.H
+	cpx #$30	; stop at $3000
+	bne -		; continue until done
+	bit PPUSTATUS	; clear address latch
+	.cp #$3f, PPUADDR ; palette RAM address high byte
+	.cp #$0, PPUADDR ; palette RAM address low byte
+	ldx #$20	; size of palette RAM
+	lda #0		; data value
+-	sta PPUDATA	; write byte
+	dex		; decrement counter
+	bne -		; continue until done
 
 	jmp start
 	.pend
