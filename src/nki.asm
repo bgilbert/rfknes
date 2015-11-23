@@ -22,6 +22,7 @@
 nki_y		.byte ? ; Y coordinate of leading border
 nki_lines	.byte ?	; including leading/trailing border
 cur_nki		.word ?
+print_flags	.byte ?
 .send
 
 .section fixed
@@ -51,7 +52,7 @@ hard	jsr rand	; randomize low byte
 ; Print an NKI
 ; nametable - high byte of nametable address
 ; cur_nki - NKI number
-; temp1 - $00 to draw at top; $80 to draw at bottom
+; print_flags - $00 to draw at top; $80 to draw at bottom
 ; Returns:
 ; nki_y - Y coordinate of leading border
 ; nki_lines - number of lines in NKI, including border
@@ -88,7 +89,7 @@ print_nki .proc
 	lda (tempA),y	; get number of lines
 	sta temp2	; put in temp2
 	.ccmd #CMD_COPY ; write draw command
-	bit temp1	; see whether we should draw at bottom
+	bit print_flags	; see whether we should draw at bottom
 	bmi bottom	; branch if so
 	lda #nki_first_row ; Y coord for top
 	bne +		; done

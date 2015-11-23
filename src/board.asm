@@ -293,7 +293,7 @@ show_nki .proc
 	cpx #(BOARD_Y_THRESHOLD + BOARD_Y_OFFSET) / 2 ; threshold
 	bpl +		; branch if top
 	ora #$80	; bottom; set flag
-+	sta temp1	; store argument
++	sta print_flags	; store argument
 
 	; render
 	jmp print_nki
