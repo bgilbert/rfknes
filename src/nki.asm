@@ -66,17 +66,18 @@ print_nki .proc
 	lda cur_nki + 1	; get NKI number high byte
 	rol		; double for table offset
 	adc #>nki_table	; add high byte of table base (assumes carry clear)
-	sta tempB + 1	; and store it to tempB.H
-	.cp #<nki_table, tempB ; copy low byte of table base to tempB.L
-	lda (tempB),y	; load low byte of string address
-	sta tempA	; store to tempA.L
+	sta tempA + 1	; and store it to tempA.H
+	.cp #<nki_table, tempA ; copy low byte of table base to tempA.L
+	lda (tempA),y	; load low byte of string address
+	tax		; put in X
 	iny		; increment offset for entry.H
-	lda (tempB),y	; load entry.H
+	lda (tempA),y	; load entry.H
 	tay		; copy to Y
 	lsr		; shift to recover high bits of string address
 	lsr
 	ora #$80	; fix the top two bits
 	sta tempA + 1	; and store to tempA.H
+	stx tempA	; store entry.L to tempA.L
 	tya		; get entry.H back again
 	and #$03	; and extract the bank
 	tay		; copy to Y
