@@ -213,8 +213,8 @@ nmi_fill .proc
 	jmp +		; start loop
 -	sty PPUDATA	; write byte
 	dex		; decrement remaining count
-	txa		; copy counter to A
-+	and #$0f	; continue until a multiple of 16 bytes
++	txa		; copy counter to A
+	and #$0f	; continue until a multiple of 16 bytes
 	bne -		; repeat until done
 
 	; write data 16 bytes at a time
