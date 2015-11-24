@@ -29,10 +29,7 @@ for i in range(256):
     x = i % 16
     y = i // 16
     coords = (x * 8, y * 8, (x + 1) * 8, (y + 1) * 8)
-    if i == ord('#') or i >= 176 and i < 224:
-        color = (255, 0, 0)
-    else:
-        index = (x + y) % 2
-        color = (0, 0, 255, 0)[index:index + 3]
+    index = (x + y) % 3
+    color = (0, 0, 255, 0, 0)[index:index + 3]
     img2.paste(color, coords[:2], img.crop(coords))
 img2.save(sys.argv[2])
