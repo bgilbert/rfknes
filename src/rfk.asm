@@ -45,20 +45,30 @@ cmd_buf		.fill $100
 .strings instructions, 2, [format("  robotfindskitten v%s.%d", VERSION, nki_count), "     by Benjamin Gilbert", "       Original game by", "      Leonard Richardson", "   Released under the GPLv2", "", "", "In this game, you are robot.", "", "Your job is to find kitten.", "", "This task is complicated by", "the existence of various", "things which are not kitten.", "", "Robot must touch items to", "determine if they are kitten", "or not.", "", "The game ends when", "robotfindskitten.", "", "", "         PRESS START"]
 
 .section fixed
+palette
+	.byte $0f, $10, $10, $10
+	.byte $0f, $1a, $21, $24
+	.byte $0f, $16, $1c, $2a
+	.byte $0f, $13, $18, $26
+
 start	.proc
 	.cp2 #$c292, rand_state ; initialize random state
 	.cp #>NAMETABLE_0, nametable ; initialize nametable
 	.cp #$80, PPUCTRL ; configure PPU; enable NMI
 
-	; set up first background palette
+	; copy fixed palette to background and sprite palettes
 	bit PPUSTATUS	; clear address latch
 	.cp #>PALETTE_BG, PPUADDR ; address high
 	.cp #<PALETTE_BG, PPUADDR ; address low
-	.cp #$0f, PPUDATA ; black background
-	lda #$10	; light gray foreground
-	sta PPUDATA	; fill out first palette
-	sta PPUDATA
-	sta PPUDATA
+	ldy #2		; outer loop counter
+-	ldx #0		; inner loop counter
+-	lda palette,x	; get palette value
+	sta PPUDATA	; write it
+	inx		; increment inner counter
+	cpx #$10	; are we done?
+	bne -		; no; continue
+	dey		; decrement outer counter
+	bne --		; continue until done
 
 	; render instructions
 	.print NAMETABLE_0, 2, 3, instructions
