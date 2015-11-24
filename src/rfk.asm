@@ -40,6 +40,7 @@ prev_nki_lines	.byte ?
 .section bss
 .align $100
 cmd_buf		.fill $100
+oam		.fill $100
 .send
 
 .strings instructions, 2, [format("  robotfindskitten v%s.%d", VERSION, nki_count), "     by Benjamin Gilbert", "       Original game by", "      Leonard Richardson", "   Released under the GPLv2", "", "", "In this game, you are robot.", "", "Your job is to find kitten.", "", "This task is complicated by", "the existence of various", "things which are not kitten.", "", "Robot must touch items to", "determine if they are kitten", "or not.", "", "The game ends when", "robotfindskitten.", "", "", "         PRESS START"]
@@ -55,6 +56,25 @@ start	.proc
 	.cp2 #$c292, rand_state ; initialize random state
 	.cp #>NAMETABLE_0, nametable ; initialize nametable
 	.cp #$80, PPUCTRL ; configure PPU; enable NMI
+
+	; initialize OAM buffer and OAM
+	ldx #0		; counter
+	clc		; clear carry
+-	lda #$ff	; Y coordinate (off-screen)
+	sta oam,x	; store
+	lda #0
+	sta oam + 1,x	; store glyph 0
+	sta oam + 2,x	; store no attributes
+	sta oam + 3,x	; store X coordinate
+	txa		; get counter
+	adc #4		; increment for next sprite
+	tax		; put back
+	bne -		; continue until done
+	lda #ROBOT	; robot glyph
+	sta oam + 1	; store in sprite 0
+	ldy #0		; init cmd_buf offset
+	.ccmd #CMD_OAM	; copy OAM buf to OAM
+	sty cmd_off	; update offset
 
 	; copy fixed palette to background and sprite palettes
 	bit PPUSTATUS	; clear address latch
@@ -74,7 +94,7 @@ start	.proc
 	.print NAMETABLE_0, 2, 3, instructions
 
 	; enable render
-	ldy #0		; init cmd_buf offset
+	ldy cmd_off	; get offset
 	.ccmd #CMD_POKE	; command
 	.ccmd #<PPUMASK	; addr low byte
 	.ccmd #>PPUMASK	; addr high byte
@@ -255,16 +275,11 @@ clear	ldx cur_x	; restore X coord
 	stx robot_x	; write new X coord
 	sty robot_y	; write new Y coord
 
-	; clear old robot
-	ldx #0		; load empty glyph
-	jsr draw_robot	; clear robot
-
-	; show new robot
+	; update robot
 	lda robot_x	; get X coord back
 	sta cur_x	; save argument
 	lda robot_y	; get Y coord back
 	sta cur_y	; save argument
-	ldx #ROBOT	; robot glyph
 	jmp draw_robot	; draw the robot
 	.pend
 
@@ -311,8 +326,6 @@ next_board .proc
 	sta cur_x	; store argument
 	lda robot_y	; load Y coord
 	sta cur_y	; store argument
-	ldx #0		; load empty glyph
-	jsr draw_robot	; clear robot
 	jsr make_board	; make a new board
 	jsr place_robot	; place the robot
 	.pend

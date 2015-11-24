@@ -27,7 +27,8 @@ CMD_FILL		= 3	; PPU address (2, high byte first),
 				; count (1) (#0 == 256 bytes), byte
 CMD_SCATTER		= 4	; count (1), [PPU address (2, high byte first),
 				; byte]
-NUM_CMDS		= 5	; number of commands
+CMD_OAM			= 5	; no args
+NUM_CMDS		= 6	; number of commands
 
 .section zeropage
 nmi_addr	.word ?
@@ -41,6 +42,7 @@ nmi_table
 	.word nmi_copy - 1
 	.word nmi_fill - 1
 	.word nmi_scatter - 1
+	.word nmi_oam - 1
 	.word reset - 1		; must be last!
 
 nmi	.proc
@@ -274,6 +276,14 @@ nmi_scatter .proc
 
 	; update cmd_off
 	sty cmd_off	; store offset
+	rts
+	.pend
+
+nmi_oam .proc
+	.cp #0, OAMADDR	; start at bottom of OAM
+	.cp #>oam, OAMDMA ; DMA OAM buffer to OAM
+	iny		; increment counter for command byte
+	sty cmd_off	; update offset
 	rts
 	.pend
 

@@ -48,23 +48,28 @@ place_robot .proc
 	lda item_bitmap,x ; load bitmap byte
 	bit bit_mask	; check occupied bit
 	bne place_robot	; if occupied, try again
-	ldx #ROBOT	; load glyph
 	jmp draw_robot	; draw robot
 	.pend
 
 ; Draw the robot
-; X - glyph to draw
-; nametable - target nametable
 ; cur_x - X coordinate
 ; cur_y - Y coordinate
 ; Clobbers: A, Y
 draw_robot .proc
+	lda cur_x	; get X coord
+	asl		; multiply by 8 for pixel coord
+	asl
+	asl
+	sta oam + 3	; store in sprite 0
+	lda cur_y	; get Y coord
+	asl		; multiply by 8 for pixel coord
+	asl
+	asl
+	tay		; put in Y
+	dey		; compensate for one-line offset
+	sty oam		; store in sprite 0
 	ldy cmd_off	; cmd_buf offset
-	.ccmd #CMD_SCATTER ; scatter command
-	.ccmd #1	; just the robot
-	jsr write_nametable_addr ; write address
-	txa		; get glyph
-	.cmd		; write it
+	.ccmd #CMD_OAM	; DMA OAM buffer
 	sty cmd_off	; update offset
 	rts
 	.pend
