@@ -40,6 +40,7 @@ item_glyph	.fill NUM_ITEMS
 item_x		.fill NUM_ITEMS
 item_y		.fill NUM_ITEMS
 item_bitmap	.fill (32 * 30) / 8
+palette		.fill 16
 attribute_tbl	.fill 64
 .send
 
@@ -151,6 +152,21 @@ coord	jsr rand	; X coordinate
 	dey		; decrement index
 	bpl coord	; continue until done
 
+	; Generate palette
+	ldy #size(palette) - 1 ; table offset
+-	jsr rand	; get random number
+	tax		; save
+	and #$0f	; get low nibble
+	beq -		; low nibble cannot be 0
+	cmp #$d		; low nibble must be <= $c
+	bpl -		; or continue
+	txa		; get full width back
+	and #$3f	; and mask off high bits
+	sta palette,y	; store to palette
+	dey		; decrement offset
+	bne -		; continue until done; skip offset 0
+	.cp #$0f, palette ; offset 0: black background
+
 	; Generate attribute table
 	jsr rand	; get initial random number
 	ldx #size(attribute_tbl) - 1 ; current byte index
@@ -211,8 +227,20 @@ get_bit_position .proc
 ; nametable - target nametable
 ; Clobbers: A, X, Y, cur_x, cur_y
 draw_entire_board .proc
-	; Write attribute table
+	; Write palette
 	ldy cmd_off	; cmd_buf offset
+	.ccmd #CMD_COPY	; copy command
+	.ccmd #>PALETTE_BG ; store high byte
+	.ccmd #<PALETTE_BG ; store low byte
+	.ccmd #size(palette) ; byte count
+	ldx #0		; byte counter
+-	lda palette,x	; get byte
+	.cmd		; write it
+	inx		; increment counter
+	cpx #size(palette) ; are we done?
+	bne -		; continue until done
+
+	; Write attribute table
 	.ccmd #CMD_COPY	; copy command
 	lda nametable	; get nametable high byte
 	ora #$3		; write at the end of the nametable
