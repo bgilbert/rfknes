@@ -40,7 +40,7 @@ item_glyph	.fill NUM_ITEMS
 item_x		.fill NUM_ITEMS
 item_y		.fill NUM_ITEMS
 item_bitmap	.fill (32 * 30) / 8
-palette		.fill 16
+palette		.fill 12
 attribute_tbl	.fill 64
 .send
 
@@ -153,19 +153,21 @@ coord	jsr rand	; X coordinate
 	bpl coord	; continue until done
 
 	; Generate palette
-	ldy #size(palette) - 1 ; table offset
--	jsr rand	; get random number
-	tax		; save
-	and #$0f	; get low nibble
-	beq -		; low nibble cannot be 0
-	cmp #$d		; low nibble must be <= $c
-	bpl -		; or continue
-	txa		; get full width back
-	and #$3f	; and mask off high bits
+	ldy #0		; table offset
+-	lda #$0f	; black background
 	sta palette,y	; store to palette
-	dey		; decrement offset
-	bne -		; continue until done; skip offset 0
-	.cp #$0f, palette ; offset 0: black background
+	lda #$10	; gray robot/border
+	sta palette + 1,y ; store to palette
+	jsr rand_palette ; random color
+	sta palette + 2,y ; store to palette
+	jsr rand_palette ; random color
+	sta palette + 3,y ; store to palette
+	tya		; get offset
+	clc		; clear carry
+	adc #4		; increment for next palette
+	tay		; put back in Y
+	cmp size(palette) ; are we done?
+	bne -		; continue until done
 
 	; Generate attribute table
 	jsr rand	; get initial random number
@@ -193,6 +195,22 @@ next	cmp #0		; see if we're out of randomness
 	bpl next	; more bytes; continue
 
 	jmp draw_entire_board ; draw board
+	.pend
+
+; Generate random palette color
+; Return:
+; A - palette color
+; Clobbers: X
+rand_palette .proc
+-	jsr rand	; get random number
+	tax		; save
+	and #$0f	; get low nibble
+	beq -		; low nibble cannot be 0
+	cmp #$d		; low nibble must be <= $c
+	bpl -		; or continue
+	txa		; get full width back
+	and #$3f	; and mask off high bits
+	rts
 	.pend
 
 ; Get bitmap position for specified coordinate
@@ -231,7 +249,7 @@ draw_entire_board .proc
 	ldy cmd_off	; cmd_buf offset
 	.ccmd #CMD_COPY	; copy command
 	.ccmd #>PALETTE_BG ; store high byte
-	.ccmd #<PALETTE_BG ; store low byte
+	.ccmd #<PALETTE_BG + 4 ; store low byte, skipping first palette
 	.ccmd #size(palette) ; byte count
 	ldx #0		; byte counter
 -	lda palette,x	; get byte

@@ -50,15 +50,15 @@ start	.proc
 	.cp #>NAMETABLE_0, nametable ; initialize nametable
 	.cp #$80, PPUCTRL ; configure PPU; enable NMI
 
-	; set up arbitrary palette
+	; set up first background palette
 	bit PPUSTATUS	; clear address latch
-	.cp #$3f, PPUADDR
-	.cp #$00, PPUADDR
-	ldx #$10
--	stx PPUDATA
-	inx
-	cpx #$30
-	bne -
+	.cp #>PALETTE_BG, PPUADDR ; address high
+	.cp #<PALETTE_BG, PPUADDR ; address low
+	.cp #$0f, PPUDATA ; black background
+	lda #$10	; light gray foreground
+	sta PPUDATA	; fill out first palette
+	sta PPUDATA
+	sta PPUDATA
 
 	; render instructions
 	.print NAMETABLE_0, 2, 2, instructions
