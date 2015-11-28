@@ -40,7 +40,6 @@ item_glyph	.fill NUM_ITEMS
 item_x		.fill NUM_ITEMS
 item_y		.fill NUM_ITEMS
 item_bitmap	.fill (32 * 30) / 8
-attribute_tbl	.fill 64
 .send
 
 .section fixed
@@ -151,31 +150,6 @@ coord	jsr rand	; X coordinate
 	dey		; decrement index
 	bpl coord	; continue until done
 
-	; Generate attribute table
-	jsr rand	; get initial random number
-	ldx #size(attribute_tbl) - 1 ; current byte index
-	ldy #4		; attributes to populate within a byte
-next	cmp #0		; see if we're out of randomness
-	bne +		; no; skip
-	stx temp1	; save X
-	jsr rand	; get random number
-	ldx temp1	; restore X
-	jmp next	; and try again
-+	bit high_two_bits ; we can only use an index if it's not zero
-	bne +		; jump if usable
-	asl		; discard this index
-	asl
-	bcc next	; and continue
-+	asl		; shift this index into attribute table
-	rol attribute_tbl,x
-	asl
-	rol attribute_tbl,x
-	dey		; finished one attribute
-	bne next	; more attributes for this byte; continue
-	ldy #4		; attributes in next byte
-	dex		; finished one byte
-	bpl next	; more bytes; continue
-
 	jmp draw_entire_board ; draw board
 	.pend
 
@@ -211,24 +185,6 @@ get_bit_position .proc
 ; nametable - target nametable
 ; Clobbers: A, X, Y, cur_x, cur_y
 draw_entire_board .proc
-	; Write attribute table
-	ldy cmd_off	; cmd_buf offset
-	.ccmd #CMD_COPY	; copy command
-	lda nametable	; get nametable high byte
-	ora #$3		; write at the end of the nametable
-	.cmd		; store high byte
-	.ccmd #$c0	; store low byte
-	.ccmd #size(attribute_tbl) ; byte counter
-	ldx #0		; byte counter
--	lda attribute_tbl,x ; get byte
-	.cmd		; write it
-	inx		; increment counter
-	cpx #size(attribute_tbl) ; are we done?
-	bne -		; continue until done
-	sty cmd_off	; update offset
-	jsr run_nmi	; wait for frame to avoid cmd_buf overflow
-
-	; Draw board
 	.cp #0, start_y	; set lower bound of board
 	.cp #29, end_y	; set upper bound of board
 	jmp draw_board
