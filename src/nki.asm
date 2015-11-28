@@ -190,7 +190,7 @@ next	lda temp1	; get line length
 	.ccmd #217	; write bottom-right corner
 	.ccmd #0	; write space
 
-	 ; update cmd_off
+	; update cmd_off
 	sty cmd_off	; update offset
 	rts
 	.pend
