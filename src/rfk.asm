@@ -70,8 +70,6 @@ start	.proc
 	adc #4		; increment for next sprite
 	tax		; put back
 	bne -		; continue until done
-	lda #ROBOT	; robot glyph
-	sta oam + 1	; store in sprite 0
 	ldy #0		; init cmd_buf offset
 	.ccmd #CMD_OAM	; copy OAM buf to OAM
 	sty cmd_off	; update offset
@@ -275,11 +273,16 @@ clear	ldx cur_x	; restore X coord
 	stx robot_x	; write new X coord
 	sty robot_y	; write new Y coord
 
-	; update robot
+	; clear old robot
+	ldx #0		; load empty glyph
+	jsr draw_robot	; clear robot
+
+	; show new robot
 	lda robot_x	; get X coord back
 	sta cur_x	; save argument
 	lda robot_y	; get Y coord back
 	sta cur_y	; save argument
+	ldx #ROBOT	; robot glyph
 	jmp draw_robot	; draw the robot
 	.pend
 
@@ -326,6 +329,8 @@ next_board .proc
 	sta cur_x	; store argument
 	lda robot_y	; load Y coord
 	sta cur_y	; store argument
+	ldx #0		; load empty glyph
+	jsr draw_robot	; clear robot
 	jsr make_board	; make a new board
 	jsr place_robot	; place the robot
 	.pend
