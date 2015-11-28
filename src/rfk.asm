@@ -48,9 +48,13 @@ oam		.fill $100
 .section fixed
 palette
 	.byte $0f, $10, $10, $10
-	.byte $0f, $1a, $21, $24
-	.byte $0f, $16, $1c, $2a
-	.byte $0f, $13, $18, $26
+	.byte $0f, $10, $10, $10
+	.byte $0f, $10, $10, $10
+	.byte $0f, $10, $10, $10
+	.byte $0f, $11, $13, $14
+	.byte $0f, $16, $18, $1a
+	.byte $0f, $1c, $21, $23
+	.byte $0f, $25, $27, $2b
 
 start	.proc
 	.cp2 #$c292, rand_state ; initialize random state
@@ -74,19 +78,16 @@ start	.proc
 	.ccmd #CMD_OAM	; copy OAM buf to OAM
 	sty cmd_off	; update offset
 
-	; copy fixed palette to background and sprite palettes
+	; copy background and sprite palettes
 	bit PPUSTATUS	; clear address latch
 	.cp #>PALETTE_BG, PPUADDR ; address high
 	.cp #<PALETTE_BG, PPUADDR ; address low
-	ldy #2		; outer loop counter
--	ldx #0		; inner loop counter
+	ldx #0		; loop counter
 -	lda palette,x	; get palette value
 	sta PPUDATA	; write it
-	inx		; increment inner counter
-	cpx #$10	; are we done?
+	inx		; increment
+	cpx #$20	; are we done?
 	bne -		; no; continue
-	dey		; decrement outer counter
-	bne --		; continue until done
 
 	; render instructions
 	.print NAMETABLE_0, 2, 3, instructions
