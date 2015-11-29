@@ -42,8 +42,6 @@ item_bitmap	.fill (32 * 30) / 8
 .send
 
 .section fixed
-high_two_bits	.byte $c0
-
 ; Completely clear nametable
 ; nametable - target nametable
 clear_nametable .proc
