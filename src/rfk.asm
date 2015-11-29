@@ -392,7 +392,7 @@ next	lda robot_x	; get robot X
 done	jmp next_board
 	.pend
 
-; Wait one second; bail out early if A or Start is pressed.
+; Wait one second; bail out early if A, Select, or Start is pressed.
 ; Return: Z set if exited on timer, clear if exited on button.
 anim_wait .proc
 	lda #60		; frames per second
@@ -401,6 +401,8 @@ anim_wait .proc
 	jsr input	; check for button press
 	lda new_buttons	; get buttons
 	.cbit BTN_A	; check for A
+	bne return	; and return
+	.cbit BTN_SELECT ; check for Select
 	bne return	; and return
 	.cbit BTN_START	; check for Start
 	bne return	; and return
