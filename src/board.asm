@@ -36,10 +36,8 @@ end_y		.byte ?
 
 .section bss
 nki_num		.fill 2 * (NUM_ITEMS - 1)
-item_glyph	.fill NUM_ITEMS
 item_x		.fill NUM_ITEMS
 item_y		.fill NUM_ITEMS
-item_palette	.fill NUM_ITEMS
 item_bitmap	.fill (32 * 30) / 8
 .send
 
@@ -115,7 +113,7 @@ make_board .proc
 	dey		; decrement index
 	bpl -		; continue until done
 
-	; Pick glyphs, coordinates, and palettes
+	; Pick coordinates
 	ldy #NUM_ITEMS - 1 ; index
 coord	jsr rand	; X coordinate
 	and #COORD_MASK	; mask off low bits
@@ -124,7 +122,7 @@ coord	jsr rand	; X coordinate
 	clc		; clear carry
 	adc #BOARD_X_OFFSET ; allow for border
 	sta item_x,y	; store
-	sta cur_x	; store again for get_bit_position
+	sta cur_x	; store again
 -	jsr rand	; Y coordinate
 	and #COORD_MASK	; mask off low bits
 	cmp #BOARD_Y_THRESHOLD ; compare with min invalid Y
@@ -139,6 +137,20 @@ coord	jsr rand	; X coordinate
 	bne coord	; if occupied, try again
 	ora bit_mask	; set occupied bit
 	sta item_bitmap,x ; and write back
+	tya		; get index
+	asl		; multiply by 4 for OAM offset
+	asl
+	tax		; put in X
+	lda cur_x	; get X coord
+	asl		; multiply by 8
+	asl
+	asl
+	sta oam + 3,x	; store in OAM
+	dey		; decrement index
+	bpl coord	; continue until done
+
+	; Pick glyphs and palettes
+	ldy #0		; OAM offset
 -	jsr rand	; glyph
 	and #$7f	; drop high bit
 	cmp #$21	; minimum printable
@@ -147,12 +159,16 @@ coord	jsr rand	; X coordinate
 	bpl -		; or try again
 	cmp #ROBOT	; must not be robot!
 	beq -		; or try again
-	sta item_glyph,y ; store
+	sta oam + 1,y	; store
 	jsr rand	; palette
 	and #$03	; drop high bits
-	sta item_palette,y ; store
-	dey		; decrement index
-	bpl coord	; continue until done
+	sta oam + 2,y	; store
+	tya		; get offset
+	clc		; clear carry
+	adc #4		; add one OAM entry
+	tay		; put back in Y
+	cmp #4 * NUM_ITEMS ; check for loop end
+	bne -		; continue until done
 
 	jmp draw_entire_board ; draw board
 	.pend
@@ -216,15 +232,6 @@ draw_board .proc
 	sec		; set carry
 	sbc #1		; subtract one line for Y offset
 +	sta oam,y	; store Y coordinate
-	lda item_x,x	; get X coordinate
-	asl		; multiply by 8
-	asl
-	asl
-	sta oam + 3,y	; store X coordinate
-	lda item_glyph,x ; get glyph
-	sta oam + 1,y	; store glyph
-	lda item_palette,x ; get palette
-	sta oam + 2,y	; store palette
 	inx		; increment item counter
 	tya		; get OAM offset
 	clc		; clear carry
