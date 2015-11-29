@@ -323,8 +323,7 @@ next_board .proc
 	jsr clear_lines	; clear NKI
 	.cp #0, nki_lines ; clear NKI indication
 	jsr run_nmi	; wait for frame
-+	jsr end_board	; clear board
-	lda robot_x	; load X coord
++	lda robot_x	; load X coord
 	sta cur_x	; store argument
 	lda robot_y	; load Y coord
 	sta cur_y	; store argument

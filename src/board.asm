@@ -264,17 +264,6 @@ write_nametable_addr .proc
 	rts
 	.pend
 
-; Clear glyphs on the board and redraw it
-; Clobbers: A, X, Y, item_glyph
-end_board .proc
-	lda #0		; load empty glyph
-	ldx #NUM_ITEMS - 1 ; load counter
--	sta item_glyph,x ; store glyph
-	dex		; decrement counter
-	bpl -		; continue until done
-	jmp draw_entire_board ; redraw
-	.pend
-
 ; Show an NKI
 ; nametable - target nametable
 ; cur_x - X coordinate
