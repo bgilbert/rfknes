@@ -35,6 +35,8 @@ cmd_off		.byte ?
 rand_state	.word ?
 prev_nki_y	.byte ?
 prev_nki_lines	.byte ?
+anim_frame	.byte ?
+delay_frame	.byte ?
 .send
 
 .section bss
@@ -44,6 +46,9 @@ oam		.fill $100
 .send
 
 .strings instructions, 2, [format("  robotfindskitten v%s.%d", VERSION, nki_count), "     by Benjamin Gilbert", "       Original game by", "      Leonard Richardson", "   Released under the GPLv2", "", "", "In this game, you are robot.", "", "Your job is to find kitten.", "", "This task is complicated by", "the existence of various", "things which are not kitten.", "", "Robot must touch items to", "determine if they are kitten", "or not.", "", "The game ends when", "robotfindskitten.", "", "", "         PRESS START"]
+
+FOUND_KITTEN_ROW = 15
+FOUND_KITTEN_COLUMN = 16
 
 .section fixed
 palette
@@ -198,7 +203,7 @@ do_input .proc
 	; check whether new item is kitten
 	jsr test_kitten	; is item kitten?
 	bne +		; jump if not kitten
-	jmp next_board	; kitten; replace board and return
+	jmp found_kitten ; kitten; show ending animation
 
 	; if new item is NKI with no current NKI showing, handle and return
 +	lda nki_lines	; see if we're currently showing an NKI
@@ -309,6 +314,89 @@ pause	.proc
 	.ccmd #PPUMASK_NORMAL ; rendering enabled
 	sty cmd_off	; update offset
 	rts
+	.pend
+
+; Show ending animation and load next board
+found_kitten .proc
+	; hide NKIs
+	lda #$ff	; hide sprite
+	ldx #0		; OAM offset
+-	sta oam,x	; write Y coord
+	inx		; increment for next OAM entry
+	inx
+	inx
+	inx
+	cpx #4 * (NUM_ITEMS - 1) ; check loop limit
+	bne -		; continue until kitten
+
+	; move kitten in Y
+	lda #8 * FOUND_KITTEN_ROW - 1 ; get Y coord
+	sta oam + 4 * (NUM_ITEMS - 1) ; store it
+
+	; set up loop
+	.cp #3, anim_frame ; frames before collision
+
+	; clear robot
+next	lda robot_x	; get robot X
+	sta cur_x	; store
+	lda robot_y	; get robot Y
+	sta cur_y	; store
+	ldx #0		; empty glyph
+	jsr draw_robot	; clear the robot
+
+	; show robot
+	lda #FOUND_KITTEN_COLUMN - 1 ; robot X in final frame
+	sec		; set carry
+	sbc anim_frame	; subtract for current frame
+	sta robot_x	; store for clearing
+	sta cur_x	; and for draw_robot
+	lda #FOUND_KITTEN_ROW ; get robot Y
+	sta robot_y	; store for clearing
+	sta cur_y	; and for draw_robot
+	ldx #ROBOT	; robot glyph
+	jsr draw_robot	; clear the robot
+
+	; move kitten
+	lda #FOUND_KITTEN_COLUMN ; kitten X in final frame
+	clc		; clear carry
+	adc anim_frame	; add for current frame
+	asl		; multiply by 8
+	asl
+	asl
+	sta oam + 4 * (NUM_ITEMS - 1) + 3 ; store to OAM X coord
+
+	; update OAM
+	ldy cmd_off	; get cmd_buf offset
+	.ccmd #CMD_OAM	; update OAM
+	sty cmd_off	; update offset
+
+	; draw and wait
+	jsr anim_wait	; NMI and wait one second
+	bne done	; return on button press
+
+	; next iteration
+	dec anim_frame	; decrement frame counter
+	bpl next	; continue until after robot and kitten meet
+
+	; replace board
+done	jmp next_board
+	.pend
+
+; Wait one second; bail out early if A or Start is pressed.
+; Return: Z set if exited on timer, clear if exited on button.
+anim_wait .proc
+	lda #60		; frames per second
+	sta delay_frame	; store
+-	jsr run_nmi	; wait for frame
+	jsr input	; check for button press
+	lda new_buttons	; get buttons
+	.cbit BTN_A	; check for A
+	bne return	; and return
+	.cbit BTN_START	; check for Start
+	bne return	; and return
+	dec delay_frame	; decrement count
+	bne -		; continue until done
+return	rts
 	.pend
 
 ; Show next board
