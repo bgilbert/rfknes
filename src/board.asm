@@ -39,6 +39,7 @@ nki_num		.fill 2 * (NUM_ITEMS - 1)
 item_glyph	.fill NUM_ITEMS
 item_x		.fill NUM_ITEMS
 item_y		.fill NUM_ITEMS
+item_palette	.fill NUM_ITEMS
 item_bitmap	.fill (32 * 30) / 8
 .send
 
@@ -114,7 +115,7 @@ make_board .proc
 	dey		; decrement index
 	bpl -		; continue until done
 
-	; Pick glyphs and coordinates
+	; Pick glyphs, coordinates, and palettes
 	ldy #NUM_ITEMS - 1 ; index
 coord	jsr rand	; X coordinate
 	and #COORD_MASK	; mask off low bits
@@ -147,6 +148,9 @@ coord	jsr rand	; X coordinate
 	cmp #ROBOT	; must not be robot!
 	beq -		; or try again
 	sta item_glyph,y ; store
+	jsr rand	; palette
+	and #$03	; drop high bits
+	sta item_palette,y ; store
 	dey		; decrement index
 	bpl coord	; continue until done
 
@@ -183,60 +187,55 @@ get_bit_position .proc
 
 ; Draw the entire board
 ; nametable - target nametable
-; Clobbers: A, X, Y, cur_x, cur_y
+; Clobbers: A, X, Y, start_y, end_y
 draw_entire_board .proc
-	.cp #0, start_y	; set lower bound of board
-	.cp #29, end_y	; set upper bound of board
+	.cp #0, start_y	; first line to skip
+	.cp #0, end_y	; last line to skip
 	jmp draw_board
 	.pend
 
 ; Draw the board
-; nametable - target nametable
-; start_y - minimum Y to draw
-; end_y - minimum Y not to draw
-; Clobbers: A, X, Y, cur_x, cur_y
+; start_y - minimum Y to skip drawing
+; end_y - minimum Y not to skip drawing
+; Clobbers: A, X, Y
 draw_board .proc
-	; Count items in range
-	ldx #0		; number of items in range
-	ldy #NUM_ITEMS - 1 ; item index
--	lda item_y,y	; get Y coordinate
-	cmp start_y	; compare against minimum
-	bmi +		; skip if less
-	cmp end_y	; compare against maximum
-	bpl +		; skip if greater
-	beq +		; or equal
-	inx		; increment count
-+	dey		; decrement index
-	bpl -		; continue until done
-
-	; If there are no items, we're done
-	cpx #0		; is count zero?
-	bne +		; no: continue
-	rts		; else return
-
-	; Set up command
-+	ldy cmd_off	; cmd_buf offset
-	.ccmd #CMD_SCATTER ; scatter command
-	txa		; get item count
-	.cmd		; store
-
 	; Write items
-	ldx #NUM_ITEMS - 1 ; init counter
+	ldx #0		; item number
+	ldy #0		; OAM offset
 -	lda item_y,x	; get Y coordinate
 	cmp start_y	; compare against minimum
-	bmi +		; skip if less
+	bmi +		; continue if less
 	cmp end_y	; compare against maximum
-	bpl +		; skip if greater
+	bpl +		; continue if greater
 	beq +		; or equal
-	sta cur_y	; store Y coordinate
+	lda #$ff	; disable sprite
+	bne ++		; continue
++	asl		; multiply by 8
+	asl
+	asl
+	sec		; set carry
+	sbc #1		; subtract one line for Y offset
++	sta oam,y	; store Y coordinate
 	lda item_x,x	; get X coordinate
-	sta cur_x	; store
-	jsr write_nametable_addr ; write address
+	asl		; multiply by 8
+	asl
+	asl
+	sta oam + 3,y	; store X coordinate
 	lda item_glyph,x ; get glyph
-	.cmd		; store
-+	dex		; decrement counter
-	bpl -		; continue until done
+	sta oam + 1,y	; store glyph
+	lda item_palette,x ; get palette
+	sta oam + 2,y	; store palette
+	inx		; increment item counter
+	tya		; get OAM offset
+	clc		; clear carry
+	adc #4		; next OAM
+	tay		; put back in Y
+	cpx #NUM_ITEMS	; check item counter
+	bne -		; continue until done
 
+	; Write command
+	ldy cmd_off	; cmd_buf offset
+	.ccmd #CMD_OAM	; write OAM
 	sty cmd_off	; update offset
 	rts
 	.pend
@@ -300,7 +299,15 @@ show_nki .proc
 +	sta print_flags	; store argument
 
 	; render
-	jmp print_nki
+	jsr print_nki
+
+	; update items
+	lda nki_y	; get start Y coord
+	sta start_y	; store it
+	clc		; clear carry
+	adc nki_lines	; add line count
+	sta end_y	; store end coord
+	jmp draw_board	; update board
 	.pend
 
 ; Find an NKI, which must exist

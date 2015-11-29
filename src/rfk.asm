@@ -244,7 +244,6 @@ mixed	lda prev_nki_y	; start Y coord for redraw
 	jsr run_nmi	; wait for frame, since draw + clear is too much
 			; work for one frame
 redraw	jsr clear_lines	; clear
-	jsr draw_board	; redraw items
 return	rts
 
 	; no new NKI; clear old NKI if showing
@@ -261,8 +260,7 @@ clear	ldx cur_x	; restore X coord
 	sta start_y	; and store it
 	jsr clear_lines	; clear NKI
 	.cp #0, nki_lines ; clear NKI indication
-	jsr draw_board	; redraw board
-	jsr run_nmi	; draw frame
+	jsr draw_entire_board ; redraw board
 	ldx temp1	; restore X coord
 	ldy temp2	; restore Y coord
 
