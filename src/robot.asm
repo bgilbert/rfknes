@@ -60,9 +60,9 @@ place_robot .proc
 ; Clobbers: A, Y
 draw_robot .proc
 	ldy cmd_off	; cmd_buf offset
-	.ccmd #CMD_SCATTER ; scatter command
-	.ccmd #1	; just the robot
+	.ccmd #CMD_FILL	; fill command
 	jsr write_nametable_addr ; write address
+	.ccmd #1	; just the robot
 	txa		; get glyph
 	.cmd		; write it
 	sty cmd_off	; update offset

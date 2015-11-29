@@ -25,10 +25,8 @@ CMD_COPY		= 2	; PPU address (2, high byte first),
 				; count (1), data
 CMD_FILL		= 3	; PPU address (2, high byte first),
 				; count (1) (#0 == 256 bytes), byte
-CMD_SCATTER		= 4	; count (1), [PPU address (2, high byte first),
-				; byte]
-CMD_OAM			= 5	; no args
-NUM_CMDS		= 6	; number of commands
+CMD_OAM			= 4	; no args
+NUM_CMDS		= 5	; number of commands
 
 .section zeropage
 nmi_addr	.word ?
@@ -41,7 +39,6 @@ nmi_table
 	.word nmi_poke - 1
 	.word nmi_copy - 1
 	.word nmi_fill - 1
-	.word nmi_scatter - 1
 	.word nmi_oam - 1
 	.word reset - 1		; must be last!
 
@@ -249,33 +246,6 @@ done	lda cmd_off	; get offset
 	clc		; clear carry
 	adc #5		; add command size
 	sta cmd_off	; store back
-	rts
-	.pend
-
-nmi_scatter .proc
-	; get counter
-	lda cmd_buf + 1,y ; get counter
-	tax		; put in X
-
-	; copy items
-	iny		; update offset
-	iny
-	clc		; clear carry for loop
--	bit PPUSTATUS	; clear address latch
-	lda cmd_buf,y	; get nametable.H
-	sta PPUADDR	; write it
-	lda cmd_buf + 1,y ; get nametable.L
-	sta PPUADDR	; write it
-	lda cmd_buf + 2,y ; get data byte
-	sta PPUDATA	; write it
-	tya		; get offset
-	adc #3		; add item size (assumes carry clear)
-	tay		; update offset
-	dex		; decrement counter
-	bne -		; continue until done
-
-	; update cmd_off
-	sty cmd_off	; store offset
 	rts
 	.pend
 
