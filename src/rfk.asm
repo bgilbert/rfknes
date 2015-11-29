@@ -56,8 +56,8 @@ palette
 	.byte $0f, $10, $10, $10
 	.byte $0f, $10, $10, $10
 	.byte $0f, $10, $10, $10
-	.byte $0f, $11, $13, $14
-	.byte $0f, $16, $18, $1a
+	.byte $0f, $11, $13, $16  ; last entry is found_kitten heart color
+	.byte $0f, $14, $18, $1a
 	.byte $0f, $1c, $21, $23
 	.byte $0f, $25, $27, $2b
 
@@ -377,6 +377,16 @@ next	lda robot_x	; get robot X
 	; next iteration
 	dec anim_frame	; decrement frame counter
 	bpl next	; continue until after robot and kitten meet
+
+	; show heart in sprite 0
+	.cp #8 * (FOUND_KITTEN_ROW - 1) - 1, oam ; heart Y
+	.cp #3, oam + 1	; heart glyph
+	.cp #0, oam + 2 ; palette
+	.cp #8 * (FOUND_KITTEN_COLUMN - 1), oam + 3 ; heart X
+	ldy cmd_off	; get cmd_buf offset
+	.ccmd #CMD_OAM	; update OAM
+	sty cmd_off	; update offset
+	jsr anim_wait	; NMI and wait one second
 
 	; replace board
 done	jmp next_board
