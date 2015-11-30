@@ -64,7 +64,7 @@ nmi	.proc
 	sty cmd_off	; and store it
 	beq next	; start loop
 -	cmp #NUM_CMDS	; out-of-bounds command?
-	bmi +		; no; jump
+	bcc +		; no; jump
 	lda #NUM_CMDS	; reset handler
 +	jsr cmd_dispatch; dispatch
 	ldy cmd_off	; load offset into buffer
@@ -133,7 +133,7 @@ nmi_copy .proc
 	clc		; clear carry
 	adc #4		; add size of header
 	tay		; put back in Y
-	bpl +		; start loop
+	bne +		; start loop
 -	lda cmd_buf,y	; load byte
 	sta PPUDATA	; write it
 	dex		; decrement remaining count

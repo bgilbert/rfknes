@@ -120,17 +120,15 @@ make_board .proc
 coord	jsr rand	; X coordinate
 	and #COORD_MASK	; mask off low bits
 	cmp #BOARD_X_THRESHOLD ; compare with min invalid X
-	bpl coord	; if too large, try again
-	clc		; clear carry
-	adc #BOARD_X_OFFSET ; allow for border
+	bcs coord	; if too large, try again
+	adc #BOARD_X_OFFSET ; allow for border (assumes carry clear)
 	sta item_x,y	; store
 	sta cur_x	; store again
 -	jsr rand	; Y coordinate
 	and #COORD_MASK	; mask off low bits
 	cmp #BOARD_Y_THRESHOLD ; compare with min invalid Y
-	bpl -		; if too large, try again
-	clc		; clear carry
-	adc #BOARD_Y_OFFSET ; allow for border
+	bcs -		; if too large, try again
+	adc #BOARD_Y_OFFSET ; allow for border (assumes carry clear)
 	sta item_y,y	; store
 	sta cur_y	; store again for get_bit_position
 	jsr get_bit_position ; get bitmap position
@@ -156,9 +154,9 @@ coord	jsr rand	; X coordinate
 -	jsr rand	; glyph
 	and #$7f	; drop high bit
 	cmp #$21	; minimum printable
-	bmi -		; or try again
+	bcc -		; or try again
 	cmp #$7f	; minimum non-printable
-	bpl -		; or try again
+	bcs -		; or try again
 	cmp #ROBOT	; must not be robot!
 	beq -		; or try again
 	sta oam + 1,y	; store
@@ -227,10 +225,9 @@ draw_board .proc
 	ldy #0		; OAM offset
 -	lda item_y,x	; get Y coordinate
 	cmp start_y	; compare against minimum
-	bmi +		; continue if less
+	bcc +		; continue if less
 	cmp end_y	; compare against maximum
-	bpl +		; continue if greater
-	beq +		; or equal
+	bcs +		; continue if greater or equal
 	lda #$ff	; disable sprite
 	bne ++		; continue
 +	asl		; multiply by 8
@@ -321,7 +318,7 @@ show_nki .proc
 	lda #0		; no flags
 	ldx cur_y	; get Y coord
 	cpx #BOARD_HALF_THRESHOLD + 1 ; threshold
-	bpl +		; branch if top
+	bcs +		; branch if top
 	ora #$80	; bottom; set flag
 +	sta print_flags	; store argument
 

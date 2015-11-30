@@ -36,7 +36,7 @@ again	jsr rand	; randomize high byte
 	sta cur_nki + 1	; store high byte
 	cmp #>(nki_count - 1) ; compare to max index
 	beq hard	; branch if outcome uncertain
-	bpl again	; high byte too large?  try again
+	bcs again	; high byte too large?  try again
 	jsr rand	; randomize low byte
 	sta cur_nki	; store low byte
 	rts
@@ -44,7 +44,7 @@ again	jsr rand	; randomize high byte
 hard	jsr rand	; randomize low byte
 	cmp #<(nki_count - 1) ; compare to max index
 	beq +		; equal; we're safe
-	bpl again	; greater; try again
+	bcs again	; greater; try again
 +	sta cur_nki	; store low byte
 	rts
 	.pend
@@ -148,7 +148,7 @@ next	lda temp1	; get line length
 	iny		; yes; carry
 +	sty tempB + 1	; store to tempB.H
 	ldy #0		; first char of string, first byte of (tempB)
-	bpl +		; start loop
+	beq +		; start loop
 -	sta (tempB),y	; store character
 	iny		; increment index
 +	lda (tempA),y	; load character

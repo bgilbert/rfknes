@@ -31,17 +31,15 @@ place_robot .proc
 	jsr rand	; X coordinate
 	and #COORD_MASK	; mask off low bits
 	cmp #BOARD_X_THRESHOLD ; compare with min invalid X
-	bpl place_robot	; if too large, try again
-	clc		; clear carry
-	adc #BOARD_X_OFFSET ; allow for border
+	bcs place_robot	; if too large, try again
+	adc #BOARD_X_OFFSET ; allow for border (assumes carry clear)
 	sta robot_x	; store
 	sta cur_x	; store again for get_bit_position
 -	jsr rand	; Y coordinate
 	and #COORD_MASK	; mask off low bits
 	cmp #BOARD_Y_THRESHOLD ; compare with min invalid Y
-	bpl -		; if too large, try again
-	clc		; clear carry
-	adc #BOARD_Y_OFFSET ; allow for border
+	bcs -		; if too large, try again
+	adc #BOARD_Y_OFFSET ; allow for border (assumes carry clear)
 	sta robot_y	; store
 	sta cur_y	; store again for get_bit_position
 	jsr get_bit_position ; get bitmap position

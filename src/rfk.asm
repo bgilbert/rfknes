@@ -205,16 +205,16 @@ do_input .proc
 
 	; apply bounds
 +	cpx #BOARD_X_OFFSET ; X coord < min?
-	bpl +		; no
+	bcs +		; no
 	ldx robot_x	; or reset
 +	cpx #(BOARD_X_THRESHOLD + BOARD_X_OFFSET) ; X coord > max?
-	bmi +		; no
+	bcc +		; no
 	ldx robot_x	; or reset
 +	cpy #BOARD_Y_OFFSET ; Y coord < min?
-	bpl +		; no
+	bcs +		; no
 	ldy robot_y	; or reset
 +	cpy #(BOARD_Y_THRESHOLD + BOARD_Y_OFFSET) ; Y coord > max?
-	bmi +		; no
+	bcc +		; no
 	ldy robot_y	; or reset
 
 	; check for new item
@@ -242,24 +242,23 @@ do_input .proc
 	jsr show_nki	; draw new NKI
 	lda #16		; mid-screen threshold
 	cmp prev_nki_y	; compare to previous Y
-	bpl top		; previous NKI at top of screen
+	bcs top		; previous NKI at top of screen
 	cmp nki_y	; compare to current Y
-	bpl mixed	; mixed top and bottom
+	bcs mixed	; mixed top and bottom
 	; both at bottom; if new nki_y > old, fix difference
 	lda prev_nki_y	; get old top
 	cmp nki_y	; compare to new top
-	bpl return	; new <= old; done
+	bcs return	; new <= old; done
 	sta start_y	; start Y coord for clearing
 	.cp nki_y, end_y ; end Y coord for clearing
 	bne redraw	; redraw
 top	cmp nki_y	; compare to current NKI
-	bmi mixed	; mixed top and bottom
+	bcc mixed	; mixed top and bottom
 	; both at top; if new nki_lines < old, fix difference
 	lda nki_lines	; get new line count
 	cmp prev_nki_lines ; compare to old line count
-	bpl return	; new >= old; done
-	clc		; clear carry
-	adc nki_y	; add new Y coord
+	bcs return	; new >= old; done
+	adc nki_y	; add new Y coord (assumes carry clear)
 	sta start_y	; start Y coord for clearing
 	lda prev_nki_lines ; get old line count
 	adc prev_nki_y	; add old Y coord
