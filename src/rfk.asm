@@ -321,6 +321,9 @@ pause	.proc
 
 ; Show ending animation and load next board
 found_kitten .proc
+	; clear NKI text if showing
+	jsr clear_nki
+
 	; hide NKIs
 	lda #$ff	; hide sprite
 	ldx #0		; OAM offset
@@ -416,17 +419,8 @@ return	rts
 
 ; Show next board
 next_board .proc
-	lda nki_lines	; see if an NKI is showing
-	beq +		; no; continue
-	clc		; clear carry
-	adc nki_y	; compute end Y coord of NKI
-	sta end_y	; and store it
-	lda nki_y	; get start Y coord
-	sta start_y	; and store it
-	jsr clear_lines	; clear NKI
-	.cp #0, nki_lines ; clear NKI indication
-	jsr run_nmi	; wait for frame
-+	lda robot_x	; load X coord
+	jsr clear_nki	; clear any NKI that might be showing
+	lda robot_x	; load X coord
 	sta cur_x	; store argument
 	lda robot_y	; load Y coord
 	sta cur_y	; store argument
@@ -434,6 +428,21 @@ next_board .proc
 	jsr draw_robot	; clear robot
 	jsr make_board	; make a new board
 	jsr place_robot	; place the robot
+	.pend
+
+; Clear any NKI that might be showing, preparatory to clearing board
+clear_nki .proc
+	lda nki_lines	; see if an NKI is showing
+	bne +		; yes; continue
+	rts		; no; return
++	clc		; clear carry
+	adc nki_y	; compute end Y coord of NKI
+	sta end_y	; and store it
+	lda nki_y	; get start Y coord
+	sta start_y	; and store it
+	jsr clear_lines	; clear NKI
+	.cp #0, nki_lines ; clear NKI indication
+	jmp run_nmi	; wait for frame
 	.pend
 
 ; Tell NMI handler we're ready, then wait for it to complete
