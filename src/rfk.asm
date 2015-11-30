@@ -99,9 +99,21 @@ start	.proc
 	bne -		; no; continue
 
 	; render instructions
-	.print NAMETABLE_0, 2, 3, instructions
+	instructions_ppu_off = 3 * 32 + 2
+	ldy cmd_off	; get offset
+	.ccmd #CMD_STRINGARR ; print string array
+	lda #>instructions_ppu_off ; PPU offset high
+	ora nametable	; add PPU base address
+	.cmd		; write it
+	.ccmd #<instructions_ppu_off ; PPU offset low
+	.ccmd #instructions_bank ; string bank
+	.ccmd #<instructions_addr ; string address low
+	.ccmd #>instructions_addr ; string address high
+	sty cmd_off	; update offset
 
 	; enable render
+	jsr run_nmi	; drawing instructions might take longer than VBLANK,
+			; so don't enable render until the next NMI
 	ldy cmd_off	; get offset
 	.ccmd #CMD_POKE	; command
 	.ccmd #<PPUMASK	; addr low byte

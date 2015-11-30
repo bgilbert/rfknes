@@ -26,10 +26,14 @@ CMD_COPY		= 2	; PPU address (2, high byte first),
 CMD_FILL		= 3	; PPU address (2, high byte first),
 				; count (1) (#0 == 256 bytes), byte
 CMD_OAM			= 4	; no args
-NUM_CMDS		= 5	; number of commands
+CMD_STRINGARR		= 5	; PPU address (2, high byte first),
+				; string bank (1),
+				; string address (2, low byte first)
+NUM_CMDS		= 6	; number of commands
 
 .section zeropage
 nmi_addr	.word ?
+nmi_data_addr	.word ?
 .send
 
 .section fixed
@@ -40,6 +44,7 @@ nmi_table
 	.word nmi_copy - 1
 	.word nmi_fill - 1
 	.word nmi_oam - 1
+	.word nmi_stringarr - 1
 	.word reset - 1		; must be last!
 
 nmi	.proc
@@ -255,6 +260,69 @@ nmi_oam .proc
 	iny		; increment counter for command byte
 	sty cmd_off	; update offset
 	rts
+	.pend
+
+nmi_stringarr .proc
+	; get arguments
+	lda cmd_buf + 1,y ; PPU address high byte
+	sta nmi_addr + 1 ; store it
+	lda cmd_buf + 2,y ; PPU address low byte
+	sta nmi_addr	; store it
+	lda cmd_buf + 4,y ; string address low byte
+	sta nmi_data_addr ; store it
+	lda cmd_buf + 5,y ; string address high byte
+	sta nmi_data_addr + 1 ; store it
+
+	; switch banks
+	lda cmd_buf + 3,y ; get bank
+	tax		; copy bank to X
+	sta banknums,x	; switch bank, avoiding bus conflicts
+
+	; update offset
+	tya		; get offset
+	clc		; clear carry
+	adc #6		; add command size
+	sta cmd_off	; store offset
+
+	; get number of lines
+	ldy #0		; initialize index
+	lda (nmi_data_addr),y ; load number of lines
+	tax		; put in X
+	iny		; increment index
+
+	; print line
+next	bit PPUSTATUS	; clear latch
+	lda nmi_addr + 1 ; load high byte
+	sta PPUADDR	; write it
+	lda nmi_addr	; load low byte
+	sta PPUADDR	; write it
+	jmp +		; start loop
+-	sta PPUDATA	; store character
+	iny		; increment index
++	lda (nmi_data_addr),y ; load character
+	bne -		; continue until NUL
+	dex		; decrement lines remaining
+	bne +		; continue if lines remaining
+	rts		; else done
+
+	; update string pointer
++	tya		; move count to accumulator
+	sec		; set carry to account for null byte
+	adc nmi_data_addr ; add to string address
+	sta nmi_data_addr ; write it back
+	bcc +		; need to update high byte?
+	inc nmi_data_addr + 1 ; yes
+
+	; update nametable pointer
++	lda #32		; one full row == 32 bytes
+	clc		; clear carry
+	adc nmi_addr	; add to nametable address
+	sta nmi_addr	; write it back
+	bcc +		; need to update high byte?
+	inc nmi_addr + 1 ; yes
+
++	ldy #0		; reset index
+	beq next	; loop
 	.pend
 
 .send
