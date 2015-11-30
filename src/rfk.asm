@@ -399,6 +399,8 @@ next	lda robot_x	; get robot X
 done	jmp next_board
 	.pend
 
+skip_mask .byte ((1 << BTN_A) | (1 << BTN_SELECT) | (1 << BTN_START))
+
 ; Wait one second; bail out early if A, Select, or Start is pressed.
 ; Return: Z set if exited on timer, clear if exited on button.
 anim_wait .proc
@@ -407,11 +409,7 @@ anim_wait .proc
 -	jsr run_nmi	; wait for frame
 	jsr input	; check for button press
 	lda new_buttons	; get buttons
-	.cbit BTN_A	; check for A
-	bne return	; and return
-	.cbit BTN_SELECT ; check for Select
-	bne return	; and return
-	.cbit BTN_START	; check for Start
+	bit skip_mask	; check buttons
 	bne return	; and return
 	dec delay_frame	; decrement count
 	bne -		; continue until done
