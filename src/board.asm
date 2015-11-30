@@ -324,6 +324,7 @@ show_nki .proc
 
 	; render
 	jsr print_nki
+	jsr run_nmi
 
 	; update items
 	lda nki_y	; get start Y coord

@@ -270,8 +270,6 @@ mixed	lda prev_nki_y	; start Y coord for redraw
 	clc		; clear carry
 	adc prev_nki_lines ; add length
 	sta end_y	; store end line
-	jsr run_nmi	; wait for frame, since draw + clear is too much
-			; work for one frame
 redraw	jsr clear_lines	; clear
 return	rts
 
@@ -487,7 +485,7 @@ clear_nki .proc
 	sta start_y	; and store it
 	jsr clear_lines	; clear NKI
 	.cp #0, nki_lines ; clear NKI indication
-	jmp run_nmi	; wait for frame
+	rts
 	.pend
 
 ; Tell NMI handler we're ready, then wait for it to complete
