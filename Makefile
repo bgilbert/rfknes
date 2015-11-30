@@ -2,7 +2,7 @@ all: rfk.nes
 
 SOURCES = \
 	chr/chr.asm \
-	nki/nki.asm \
+	nki/vanilla.asm \
 	src/board.asm \
 	src/nes.asm \
 	src/nki.asm \
@@ -25,7 +25,7 @@ font/font.ppm: font/makeimg
 
 font/makeimg: font/makeimg.c font/font.h
 
-nki/nki.asm: nki/vanilla.nki nki/maketable.py
+nki/vanilla.asm: nki/vanilla.nki nki/maketable.py
 	nki/maketable.py < $< > $@
 
 .PHONY: clean
@@ -33,4 +33,4 @@ clean:
 	@rm -f rfk.nes rfk.lst
 	@rm -f chr/chr.asm chr/chr.png
 	@rm -f font/font.ppm font/makeimg
-	@rm -f nki/nki.asm
+	@rm -f nki/vanilla.asm

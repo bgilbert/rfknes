@@ -24,7 +24,7 @@
 .include "robot.asm"
 .include "nki.asm"
 .include "nmi.asm"
-.include "../nki/nki.asm"
+.include "../nki/vanilla.asm"
 .include "../chr/chr.asm"
 
 VERSION = "0.1"
