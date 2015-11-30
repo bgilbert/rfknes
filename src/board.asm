@@ -25,6 +25,7 @@ BOARD_X_OFFSET = 1
 BOARD_Y_OFFSET = 2
 COORD_MASK = $1f
 
+BOARD_HALF_THRESHOLD = (BOARD_Y_THRESHOLD + BOARD_Y_OFFSET) / 2
 NUM_NKIS = NUM_ITEMS - 1
 KITTEN_ITEM = NUM_NKIS
 
@@ -250,6 +251,30 @@ draw_board .proc
 	ldy cmd_off	; cmd_buf offset
 	.ccmd #CMD_OAM	; write OAM
 	sty cmd_off	; update offset
+
+	; Write boundary to nametable for debugging
+	.if SHOW_BOUNDARY
+	; beginning of line
+	addr1 = BOARD_HALF_THRESHOLD * 32
+	.ccmd #CMD_COPY	; copy command
+	lda #>addr1	; high byte
+	ora nametable	; add nametable base
+	.cmd		; write it
+	.ccmd #<addr1	; low byte
+	.ccmd #1	; count
+	.ccmd #'_'	; data
+	; end of line
+	addr2 = (BOARD_HALF_THRESHOLD + 1) * 32 - 1
+	.ccmd #CMD_COPY	; copy command
+	lda #>addr2	; high byte
+	ora nametable	; add nametable base
+	.cmd		; write it
+	.ccmd #<addr2	; low byte
+	.ccmd #1	; count
+	.ccmd #'_'	; data
+	sty cmd_off	; update offset
+	.endif
+
 	rts
 	.pend
 
@@ -295,7 +320,7 @@ show_nki .proc
 	; select top/bottom of screen
 	lda #0		; no flags
 	ldx cur_y	; get Y coord
-	cpx #(BOARD_Y_THRESHOLD + BOARD_Y_OFFSET) / 2 ; threshold
+	cpx #BOARD_HALF_THRESHOLD + 1 ; threshold
 	bpl +		; branch if top
 	ora #$80	; bottom; set flag
 +	sta print_flags	; store argument

@@ -31,6 +31,7 @@ VERSION = "0.1"
 
 ; Debug options
 INDICATE_KITTEN = 0	; use smiley-face glyph for kitten
+SHOW_BOUNDARY = 0	; show boundary between screen top and bottom
 
 .section zeropage
 nmi_ready	.byte ?
