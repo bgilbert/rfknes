@@ -25,6 +25,9 @@ BOARD_X_OFFSET = 1
 BOARD_Y_OFFSET = 2
 COORD_MASK = $1f
 
+NUM_NKIS = NUM_ITEMS - 1
+KITTEN_ITEM = NUM_NKIS
+
 .section zeropage
 nametable	.byte ?		; top byte
 cur_x		.byte ?
@@ -35,7 +38,7 @@ end_y		.byte ?
 .send
 
 .section bss
-nki_num		.fill 2 * (NUM_ITEMS - 1)
+nki_num		.fill 2 * NUM_NKIS
 item_x		.fill NUM_ITEMS
 item_y		.fill NUM_ITEMS
 item_bitmap	.fill (32 * 30) / 8
@@ -94,7 +97,7 @@ clear_lines .proc
 ; Generate new board
 make_board .proc
 	; Pick NKI numbers
-	ldy #2 * NUM_ITEMS - 3 ; index (excluding kitten)
+	ldy #2 * NUM_NKIS - 1 ; index
 -	jsr rand_nki	; get an NKI
 	lda cur_nki + 1	; load high byte
 	sta nki_num,y	; write it
@@ -170,7 +173,7 @@ coord	jsr rand	; X coordinate
 
 	; Indicate kitten if debugging
 	.if INDICATE_KITTEN
-	.cp #1, oam + 4 * (NUM_ITEMS - 1) + 1 ; set glyph to smiley face
+	.cp #1, oam + 4 * KITTEN_ITEM + 1 ; set glyph to smiley face
 	.endif
 
 	jmp draw_entire_board ; draw board
@@ -316,7 +319,7 @@ show_nki .proc
 ; X - NKI index
 ; Clobbers: A
 find_nki .proc
-	ldx #NUM_ITEMS - 1 ; max count + 1 (excluding kitten)
+	ldx #NUM_NKIS	; max count + 1
 -	dex		; decrement count
 	lda item_x,x	; get NKI X coord
 	cmp cur_x	; compare to our X coord
@@ -334,10 +337,10 @@ find_nki .proc
 ; Z - true if kitten, false otherwise
 ; Clobbers: A
 test_kitten .proc
-	lda item_x + NUM_ITEMS - 1 ; get X coord of kitten
+	lda item_x + KITTEN_ITEM ; get X coord of kitten
 	cmp cur_x	; compare to our coord
 	bne +		; no match?  done
-	lda item_y + NUM_ITEMS - 1 ; get Y coord of kitten
+	lda item_y + KITTEN_ITEM ; get Y coord of kitten
 	cmp cur_y	; compare to our coord
 +	rts
 	.pend

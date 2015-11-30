@@ -329,12 +329,12 @@ found_kitten .proc
 	inx
 	inx
 	inx
-	cpx #4 * (NUM_ITEMS - 1) ; check loop limit
+	cpx #4 * NUM_NKIS ; check loop limit
 	bne -		; continue until kitten
 
 	; move kitten in Y
 	lda #8 * FOUND_KITTEN_ROW - 1 ; get Y coord
-	sta oam + 4 * (NUM_ITEMS - 1) ; store it
+	sta oam + 4 * KITTEN_ITEM ; store it
 
 	; set up loop
 	.cp #3, anim_frame ; frames before collision
@@ -366,7 +366,7 @@ next	lda robot_x	; get robot X
 	asl		; multiply by 8
 	asl
 	asl
-	sta oam + 4 * (NUM_ITEMS - 1) + 3 ; store to OAM X coord
+	sta oam + 4 * KITTEN_ITEM + 3 ; store to OAM X coord
 
 	; update OAM
 	ldy cmd_off	; get cmd_buf offset
