@@ -50,9 +50,12 @@ oam		.fill $100
 .send
 
 .strings instructions, 2, [format("  robotfindskitten v%s.%d", VERSION, nki_count), "     by Benjamin Gilbert", "       Original game by", "      Leonard Richardson", "   Released under the GPLv2", "", "", "In this game, you are robot.", "", "Your job is to find kitten.", "", "This task is complicated by", "the existence of various", "things which are not kitten.", "", "Robot must touch items to", "determine if they are kitten", "or not.", "", "The game ends when", "robotfindskitten.", "", "", "         PRESS START"]
+.strings congratulations, 2, ["You found kitten!", "", "Way to go, robot!"]
 
 FOUND_KITTEN_X = 16
 FOUND_KITTEN_Y = 15
+CONGRATS_X = 8
+CONGRATS_Y = 20
 
 .section fixed
 palette
@@ -406,6 +409,17 @@ next	lda robot_x	; get robot X
 	.cp #8 * (FOUND_KITTEN_X - 1), oam + 3 ; heart X
 	ldy cmd_off	; get cmd_buf offset
 	.ccmd #CMD_OAM	; update OAM
+
+	; show congratulations
+	congrats_ppu_off = CONGRATS_Y * 32 + CONGRATS_X
+	.ccmd #CMD_STRINGARR ; print string array
+	lda #>congrats_ppu_off ; PPU offset high
+	ora nametable	; add PPU base address
+	.cmd		; write it
+	.ccmd #<congrats_ppu_off ; PPU offset low
+	.ccmd #congratulations_bank ; string bank
+	.ccmd #<congratulations_addr ; string address low
+	.ccmd #>congratulations_addr ; string address high
 	sty cmd_off	; update offset
 
 	; NMI and wait for skip button
@@ -414,6 +428,15 @@ next	lda robot_x	; get robot X
 	lda new_buttons	; get result
 	bit skip_mask	; check buttons
 	beq -		; continue until pressed
+
+	; clear congratulations
+	; assume we are still in the correct bank
+	lda #CONGRATS_Y	; starting Y coord to clear
+	sta start_y	; store it
+	clc		; clear carry
+	adc congratulations_addr ; add line count
+	sta end_y	; store end point
+	jsr clear_lines	; clear lines
 
 	; replace board
 done	jmp next_board
