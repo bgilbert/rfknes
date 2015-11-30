@@ -24,7 +24,6 @@
 .include "robot.asm"
 .include "nki.asm"
 .include "nmi.asm"
-.include "../nki/vanilla.asm"
 .include "../chr/chr.asm"
 
 VERSION = "0.1"
@@ -32,6 +31,13 @@ VERSION = "0.1"
 ; Debug options
 INDICATE_KITTEN = 0	; use smiley-face glyph for kitten
 SHOW_BOUNDARY = 0	; show boundary between screen top and bottom
+TEST_NKIS = 0		; use test NKI corpus
+
+.if TEST_NKIS
+.include "../nki/test.asm"
+.else
+.include "../nki/vanilla.asm"
+.endif
 
 .section zeropage
 nmi_ready	.byte ?
