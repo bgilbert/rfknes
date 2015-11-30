@@ -29,6 +29,9 @@
 
 VERSION = "0.1"
 
+; Debug options
+INDICATE_KITTEN = 0	; use smiley-face glyph for kitten
+
 .section zeropage
 nmi_ready	.byte ?
 cmd_off		.byte ?

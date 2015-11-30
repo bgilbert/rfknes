@@ -168,6 +168,11 @@ coord	jsr rand	; X coordinate
 	cmp #4 * NUM_ITEMS ; check for loop end
 	bne -		; continue until done
 
+	; Indicate kitten if debugging
+	.if INDICATE_KITTEN
+	.cp #1, oam + 4 * (NUM_ITEMS - 1) + 1 ; set glyph to smiley face
+	.endif
+
 	jmp draw_entire_board ; draw board
 	.pend
 
