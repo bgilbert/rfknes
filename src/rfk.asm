@@ -332,6 +332,8 @@ pause	.proc
 	rts
 	.pend
 
+skip_mask .byte ((1 << BTN_A) | (1 << BTN_SELECT) | (1 << BTN_START))
+
 ; Show ending animation and load next board
 found_kitten .proc
 	; clear NKI text if showing
@@ -405,13 +407,17 @@ next	lda robot_x	; get robot X
 	ldy cmd_off	; get cmd_buf offset
 	.ccmd #CMD_OAM	; update OAM
 	sty cmd_off	; update offset
-	jsr anim_wait	; NMI and wait one second
+
+	; NMI and wait for skip button
+-	jsr run_nmi	; wait for frame
+	jsr input	; query buttons
+	lda new_buttons	; get result
+	bit skip_mask	; check buttons
+	beq -		; continue until pressed
 
 	; replace board
 done	jmp next_board
 	.pend
-
-skip_mask .byte ((1 << BTN_A) | (1 << BTN_SELECT) | (1 << BTN_START))
 
 ; Wait one second; bail out early if A, Select, or Start is pressed.
 ; Return: Z set if exited on timer, clear if exited on button.
