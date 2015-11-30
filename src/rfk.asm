@@ -51,8 +51,8 @@ oam		.fill $100
 
 .strings instructions, 2, [format("  robotfindskitten v%s.%d", VERSION, nki_count), "     by Benjamin Gilbert", "       Original game by", "      Leonard Richardson", "   Released under the GPLv2", "", "", "In this game, you are robot.", "", "Your job is to find kitten.", "", "This task is complicated by", "the existence of various", "things which are not kitten.", "", "Robot must touch items to", "determine if they are kitten", "or not.", "", "The game ends when", "robotfindskitten.", "", "", "         PRESS START"]
 
-FOUND_KITTEN_ROW = 15
-FOUND_KITTEN_COLUMN = 16
+FOUND_KITTEN_X = 16
+FOUND_KITTEN_Y = 15
 
 .section fixed
 palette
@@ -349,7 +349,7 @@ found_kitten .proc
 	bne -		; continue until kitten
 
 	; move kitten in Y
-	lda #8 * FOUND_KITTEN_ROW - 1 ; get Y coord
+	lda #8 * FOUND_KITTEN_Y - 1 ; get Y coord
 	sta oam + 4 * KITTEN_ITEM ; store it
 
 	; set up loop
@@ -364,19 +364,19 @@ next	lda robot_x	; get robot X
 	jsr draw_robot	; clear the robot
 
 	; show robot
-	lda #FOUND_KITTEN_COLUMN - 1 ; robot X in final frame
+	lda #FOUND_KITTEN_X - 1 ; robot X in final frame
 	sec		; set carry
 	sbc anim_frame	; subtract for current frame
 	sta robot_x	; store for clearing
 	sta cur_x	; and for draw_robot
-	lda #FOUND_KITTEN_ROW ; get robot Y
+	lda #FOUND_KITTEN_Y ; get robot Y
 	sta robot_y	; store for clearing
 	sta cur_y	; and for draw_robot
 	ldx #ROBOT	; robot glyph
 	jsr draw_robot	; clear the robot
 
 	; move kitten
-	lda #FOUND_KITTEN_COLUMN ; kitten X in final frame
+	lda #FOUND_KITTEN_X ; kitten X in final frame
 	clc		; clear carry
 	adc anim_frame	; add for current frame
 	asl		; multiply by 8
@@ -398,10 +398,10 @@ next	lda robot_x	; get robot X
 	bpl next	; continue until after robot and kitten meet
 
 	; show heart in sprite 0
-	.cp #8 * (FOUND_KITTEN_ROW - 1) - 1, oam ; heart Y
+	.cp #8 * (FOUND_KITTEN_Y - 1) - 1, oam ; heart Y
 	.cp #3, oam + 1	; heart glyph
 	.cp #0, oam + 2 ; palette
-	.cp #8 * (FOUND_KITTEN_COLUMN - 1), oam + 3 ; heart X
+	.cp #8 * (FOUND_KITTEN_X - 1), oam + 3 ; heart X
 	ldy cmd_off	; get cmd_buf offset
 	.ccmd #CMD_OAM	; update OAM
 	sty cmd_off	; update offset
