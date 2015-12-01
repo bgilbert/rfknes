@@ -65,10 +65,10 @@ CONGRATS_Y = 20
 
 .section fixed
 palette
-	.byte $0f, $10, $10, $10
-	.byte $0f, $10, $10, $10
-	.byte $0f, $10, $10, $10
-	.byte $0f, $10, $10, $10
+	.byte $0f, $0f, $10, $00
+	.byte $0f, $00, $00, $00
+	.byte $0f, $00, $00, $00
+	.byte $0f, $00, $00, $00
 	.byte $0f, $11, $13, $16  ; last entry is found_kitten heart color
 	.byte $0f, $14, $18, $1a
 	.byte $0f, $1c, $21, $23
@@ -77,7 +77,7 @@ palette
 start	.proc
 	.cp2 #$c292, rand_state ; initialize random state
 	.cp #>NAMETABLE_0, nametable ; initialize nametable
-	.cp #$98, PPUCTRL ; configure PPU pattern tables; enable NMI
+	.cp #$88, PPUCTRL ; configure PPU pattern tables; enable NMI
 
 	; initialize OAM buffer and OAM
 	ldx #0		; counter
@@ -287,7 +287,6 @@ clear	ldx cur_x	; restore X coord
 	sta start_y	; and store it
 	jsr clear_lines	; clear NKI
 	.cp #0, nki_lines ; clear NKI indication
-	jsr draw_entire_board ; redraw board
 	ldx temp1	; restore X coord
 	ldy temp2	; restore Y coord
 

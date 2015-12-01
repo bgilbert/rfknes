@@ -162,6 +162,7 @@ coord	jsr rand	; X coordinate
 	sta oam + 1,y	; store
 	jsr rand	; palette
 	and #$03	; drop high bits
+	ora #$20	; configure behind background
 	sta oam + 2,y	; store
 	tya		; get offset
 	clc		; clear carry
@@ -175,7 +176,7 @@ coord	jsr rand	; X coordinate
 	.cp #1, oam + 4 * KITTEN_ITEM + 1 ; set glyph to smiley face
 	.endif
 
-	jmp draw_entire_board ; draw board
+	jmp draw_board ; draw board
 	.pend
 
 ; Get bitmap position for specified coordinate
@@ -206,36 +207,19 @@ get_bit_position .proc
 	rts
 	.pend
 
-; Draw the entire board
-; nametable - target nametable
-; Clobbers: A, X, Y, start_y, end_y
-draw_entire_board .proc
-	.cp #0, start_y	; first line to skip
-	.cp #0, end_y	; last line to skip
-	jmp draw_board
-	.pend
-
 ; Draw the board
-; start_y - minimum Y to skip drawing
-; end_y - minimum Y not to skip drawing
 ; Clobbers: A, X, Y
 draw_board .proc
 	; Write items
 	ldx #0		; item number
 	ldy #0		; OAM offset
 -	lda item_y,x	; get Y coordinate
-	cmp start_y	; compare against minimum
-	bcc +		; continue if less
-	cmp end_y	; compare against maximum
-	bcs +		; continue if greater or equal
-	lda #$ff	; disable sprite
-	bne ++		; continue
-+	asl		; multiply by 8
+	asl		; multiply by 8
 	asl
 	asl
 	sec		; set carry
 	sbc #1		; subtract one line for Y offset
-+	sta oam,y	; store Y coordinate
+	sta oam,y	; store Y coordinate
 	inx		; increment item counter
 	tya		; get OAM offset
 	clc		; clear carry
@@ -323,16 +307,7 @@ show_nki .proc
 +	sta print_flags	; store argument
 
 	; render
-	jsr print_nki
-	jsr run_nmi
-
-	; update items
-	lda nki_y	; get start Y coord
-	sta start_y	; store it
-	clc		; clear carry
-	adc nki_lines	; add line count
-	sta end_y	; store end coord
-	jmp draw_board	; update board
+	jmp print_nki
 	.pend
 
 ; Find an NKI, which must exist
