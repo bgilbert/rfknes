@@ -20,16 +20,28 @@
 #
 
 import PIL.Image
+import PIL.ImageDraw
 import sys
 
 img = PIL.Image.open(sys.argv[1])
 assert img.size == (128, 128)
 img2 = PIL.Image.new('RGB', img.size)
-for i in range(256):
-    x = i % 16
-    y = i // 16
-    coords = (x * 8, y * 8, (x + 1) * 8, (y + 1) * 8)
-    index = (x + y) % 3
-    color = (0, 0, 255, 0, 0)[index:index + 3]
-    img2.paste(color, coords[:2], img.crop(coords))
+
+purpose = sys.argv[3]
+if purpose == 'background':
+    draw = PIL.ImageDraw.Draw(img2)
+    draw.rectangle(((0, 0), img.size), (255, 0, 0))
+    img2.paste((0, 255, 0), mask=img)
+    draw.rectangle((0, 0, 7, 7), (0, 0, 0))
+elif purpose == 'sprite':
+    for i in range(256):
+        x = i % 16
+        y = i // 16
+        coords = (x * 8, y * 8, (x + 1) * 8, (y + 1) * 8)
+        index = (x + y) % 3
+        color = (0, 0, 255, 0, 0)[index:index + 3]
+        img2.paste(color, coords[:2], img.crop(coords))
+else:
+    raise ValueError('Specify background or sprite')
+
 img2.save(sys.argv[2])

@@ -77,7 +77,7 @@ palette
 start	.proc
 	.cp2 #$c292, rand_state ; initialize random state
 	.cp #>NAMETABLE_0, nametable ; initialize nametable
-	.cp #$80, PPUCTRL ; configure PPU; enable NMI
+	.cp #$98, PPUCTRL ; configure PPU pattern tables; enable NMI
 
 	; initialize OAM buffer and OAM
 	ldx #0		; counter

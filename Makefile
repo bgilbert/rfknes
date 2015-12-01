@@ -15,11 +15,11 @@ SOURCES = \
 rfk.nes rfk.lst: $(SOURCES)
 	64tass --flat --quiet -o "$@" -L "$(@:.nes=.lst)" src/rfk.asm
 
-chr/chr.asm: chr/chr.png chr/makechr.py
-	chr/makechr.py $< > $@
+chr/chr.asm: chr/background.png chr/sprite.png chr/makechr.py
+	chr/makechr.py $(filter %.png,$^) > $@
 
-chr/chr.png: font/font.ppm chr/colorize.py
-	chr/colorize.py $< $@
+chr/%.png: font/font.ppm chr/colorize.py
+	chr/colorize.py $< $@ $(notdir $(@:.png=))
 
 font/font.ppm: font/makeimg
 	$< > $@
@@ -32,6 +32,6 @@ nki/%.asm: nki/%.nki nki/maketable.py
 .PHONY: clean
 clean:
 	@rm -f rfk.nes rfk.lst
-	@rm -f chr/chr.asm chr/chr.png
+	@rm -f chr/chr.asm chr/background.png chr/sprite.png
 	@rm -f font/font.ppm font/makeimg
 	@rm -f nki/test.asm nki/vanilla.asm
