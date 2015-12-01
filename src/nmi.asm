@@ -207,15 +207,16 @@ nmi_fill .proc
 	lda cmd_buf + 4,y ; get fill byte
 	tay		; put in Y
 
-	; bypass early exhaustion checks for count == 0 (256 bytes)
+	; special case for count == 0 (256 bytes)
 	cpx #0		; count == 0?
-	beq unroll	; go directly to main loop
+	bne begin	; no; start initial loop
+	ldx #256 / 16	; load loop counter
+	bne unroll	; go directly to main loop
 
 	; write data until multiple of 16 bytes remaining
-	jmp +		; start loop
 -	sty PPUDATA	; write byte
 	dex		; decrement remaining count
-+	txa		; copy counter to A
+begin	txa		; copy counter to A
 	and #$0f	; continue until a multiple of 16 bytes
 	bne -		; repeat until done
 
