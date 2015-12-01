@@ -95,7 +95,7 @@ clear_lines .proc
 	rts
 	.pend
 
-; Generate new board
+; Generate and draw new board
 make_board .proc
 	; Pick NKI numbers
 	ldy #2 * NUM_NKIS - 1 ; index
@@ -130,7 +130,7 @@ coord	jsr rand	; X coordinate
 	bcs -		; if too large, try again
 	adc #BOARD_Y_OFFSET ; allow for border (assumes carry clear)
 	sta item_y,y	; store
-	sta cur_y	; store again for get_bit_position
+	sta cur_y	; store again
 	jsr get_bit_position ; get bitmap position
 	lda item_bitmap,x ; load bitmap byte
 	bit bit_mask	; check occupied bit
@@ -146,6 +146,13 @@ coord	jsr rand	; X coordinate
 	asl
 	asl
 	sta oam + 3,x	; store in OAM
+	lda cur_y	; get Y coord
+	asl		; multiply by 8
+	asl
+	asl
+	sec		; set carry
+	sbc #1		; subtract one line for Y offset
+	sta oam,x	; store in OAM
 	dey		; decrement index
 	bpl coord	; continue until done
 
@@ -176,58 +183,6 @@ coord	jsr rand	; X coordinate
 	.cp #1, oam + 4 * KITTEN_ITEM + 1 ; set glyph to smiley face
 	.endif
 
-	jmp draw_board ; draw board
-	.pend
-
-; Get bitmap position for specified coordinate
-; cur_x - X coordinate
-; cur_y - Y coordinate
-; Return:
-; X - offset into bitmap
-; bit_mask - bit mask
-; Clobbers: A
-get_bit_position .proc
-	lda cur_x	; get X coord
-	and #$7		; mask off low bits
-	tax		; put in X
-	lda left_shifts,x ; get bit mask
-	sta bit_mask	; and store
-	lda cur_y	; get Y coord
-	tax		; copy to X
-	asl		; multiply by 4
-	asl
-	sta cur_y	; store in cur_y temporarily
-	lda cur_x	; get X coord
-	lsr		; divide by 8
-	lsr
-	lsr
-	ora cur_y	; add to Y coord
-	stx cur_y	; restore cur_y
-	tax		; put Y coord in X
-	rts
-	.pend
-
-; Draw the board
-; Clobbers: A, X, Y
-draw_board .proc
-	; Write items
-	ldx #0		; item number
-	ldy #0		; OAM offset
--	lda item_y,x	; get Y coordinate
-	asl		; multiply by 8
-	asl
-	asl
-	sec		; set carry
-	sbc #1		; subtract one line for Y offset
-	sta oam,y	; store Y coordinate
-	inx		; increment item counter
-	tya		; get OAM offset
-	clc		; clear carry
-	adc #4		; next OAM
-	tay		; put back in Y
-	cpx #NUM_ITEMS	; check item counter
-	bne -		; continue until done
-
 	; Write command
 	ldy cmd_off	; cmd_buf offset
 	.ccmd #CMD_OAM	; write OAM
@@ -256,6 +211,34 @@ draw_board .proc
 	sty cmd_off	; update offset
 	.endif
 
+	rts
+	.pend
+
+; Get bitmap position for specified coordinate
+; cur_x - X coordinate
+; cur_y - Y coordinate
+; Return:
+; X - offset into bitmap
+; bit_mask - bit mask
+; Clobbers: A
+get_bit_position .proc
+	lda cur_x	; get X coord
+	and #$7		; mask off low bits
+	tax		; put in X
+	lda left_shifts,x ; get bit mask
+	sta bit_mask	; and store
+	lda cur_y	; get Y coord
+	tax		; copy to X
+	asl		; multiply by 4
+	asl
+	sta cur_y	; store in cur_y temporarily
+	lda cur_x	; get X coord
+	lsr		; divide by 8
+	lsr
+	lsr
+	ora cur_y	; add to Y coord
+	stx cur_y	; restore cur_y
+	tax		; put Y coord in X
 	rts
 	.pend
 
