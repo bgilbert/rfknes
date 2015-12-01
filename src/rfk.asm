@@ -270,6 +270,8 @@ mixed	lda prev_nki_y	; start Y coord for redraw
 	clc		; clear carry
 	adc prev_nki_lines ; add length
 	sta end_y	; store end line
+	jsr run_nmi	; wait for frame, since draw + clear is too much
+			; work for one frame
 redraw	jsr clear_lines	; clear
 return	rts
 
