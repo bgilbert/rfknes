@@ -49,9 +49,16 @@ item_bitmap	.fill (32 * 30) / 8
 ; Completely clear nametable
 ; nametable - target nametable
 clear_nametable .proc
+	; disable rendering so we can keep clearing during the frame
+	ldy cmd_off	; cmd_buf offset
+	.ccmd #CMD_POKE	; command
+	.ccmd #<PPUMASK	; addr low byte
+	.ccmd #>PPUMASK	; addr high byte
+	.ccmd #0	; disable rendering
+
+	; clear nametable
 	ldx #3		; iteration counter
--	ldy cmd_off	; cmd_buf offset
-	.ccmd #CMD_FILL	; fill command
+-	.ccmd #CMD_FILL	; fill command
 	txa		; get counter
 	clc		; clear carry
 	adc nametable	; add nametable high byte
@@ -62,11 +69,20 @@ clear_nametable .proc
 	bne +		; skip unless last page
 	lda #192	; clearing 192 bytes
 +	.cmd		; write count
-	.ccmd #0	; write empty glyph
+	.ccmd #0	; write transparent glyph
 	sty cmd_off	; update offset
-	jsr run_nmi	; draw
 	dex		; decrement counter
 	bpl -		; continue until done
+
+	; NMI and re-enable render
+	sty cmd_off	; update offset
+	jsr run_nmi	; wait for frame
+	ldy cmd_off	; get new offset
+	.ccmd #CMD_POKE	; command
+	.ccmd #<PPUMASK	; addr low byte
+	.ccmd #>PPUMASK	; addr high byte
+	.ccmd #PPUMASK_NORMAL ; enable rendering
+	sty cmd_off	; update offset
 	rts
 	.pend
 
