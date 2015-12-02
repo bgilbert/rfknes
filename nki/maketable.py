@@ -52,8 +52,6 @@ for nki in sys.stdin:
 print('\nnki_count = {}'.format(nki_num))
 print('nki_next_power_of_two = {}'.format(1 << nki_num.bit_length()))
 
-print('\n.section fixed')
-print('nki_table')
+print('\nnki_table')
 for i in range(nki_num):
     print('\t.stringentry nki_{}'.format(i))
-print('.send')

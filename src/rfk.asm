@@ -33,12 +33,6 @@ INDICATE_KITTEN = 0	; use smiley-face glyph for kitten
 SHOW_BOUNDARY = 0	; show boundary between screen top and bottom
 TEST_NKIS = 0		; use test NKI corpus
 
-.if TEST_NKIS
-.include "../nki/test.asm"
-.else
-.include "../nki/vanilla.asm"
-.endif
-
 .section zeropage
 nmi_ready	.byte ?
 cmd_off		.byte ?

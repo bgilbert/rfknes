@@ -25,6 +25,15 @@ cur_nki		.word ?
 print_flags	.byte ?
 .send
 
+NKI_TABLE_BANK = 2
+.section bank2
+.if TEST_NKIS
+.include "../nki/test.asm"
+.else
+.include "../nki/vanilla.asm"
+.endif
+.send
+
 .section fixed
 ; Pick a random NKI
 ; Return:
@@ -69,6 +78,8 @@ print_nki .proc
 	adc #>nki_table	; add high byte of table base (assumes carry clear)
 	sta tempA + 1	; and store it to tempA.H
 	.cp #<nki_table, tempA ; copy low byte of table base to tempA.L
+	lda #NKI_TABLE_BANK ; get bank of string table
+	sta banknums + NKI_TABLE_BANK ; switch banks
 	lda (tempA),y	; load low byte of string address
 	tax		; put in X
 	iny		; increment offset for entry.H
