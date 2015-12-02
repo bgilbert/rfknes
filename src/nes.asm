@@ -56,6 +56,7 @@ prg_start =	*
 
 ; PRG ROM fixed bank
 .logical $c000
+.dsection bank3		; for strings
 .dsection fixed
 banknums .byte range(prg_banks)	; for avoiding bus conflicts in bank swaps
 .warn	"Code size: ", (* - $c000), " bytes"

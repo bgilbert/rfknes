@@ -49,8 +49,8 @@ cmd_buf		.fill $100
 oam		.fill $100
 .send
 
-.strings instructions, 2, [format("  robotfindskitten v%s.%d", VERSION, nki_count), "     by Benjamin Gilbert", "       Original game by", "      Leonard Richardson", "   Released under the GPLv2", "", "", "In this game, you are robot.", "", "Your job is to find kitten.", "", "This task is complicated by", "the existence of various", "things which are not kitten.", "", "Robot must touch items to", "determine if they are kitten", "or not.", "", "The game ends when", "robotfindskitten.", "", "", "         PRESS START"]
-.strings congratulations, 2, ["You found kitten!", "", "Way to go, robot!"]
+.strings instructions, 3, [format("  robotfindskitten v%s.%d", VERSION, nki_count), "     by Benjamin Gilbert", "       Original game by", "      Leonard Richardson", "   Released under the GPLv2", "", "", "In this game, you are robot.", "", "Your job is to find kitten.", "", "This task is complicated by", "the existence of various", "things which are not kitten.", "", "Robot must touch items to", "determine if they are kitten", "or not.", "", "The game ends when", "robotfindskitten.", "", "", "         PRESS START"]
+.strings congratulations, 3, ["You found kitten!", "", "Way to go, robot!"]
 
 FOUND_KITTEN_X = 16
 FOUND_KITTEN_Y = 15
