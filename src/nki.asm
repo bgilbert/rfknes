@@ -124,15 +124,15 @@ bottom	lda #nki_last_row ; Y coord for bottom
 	.cmd		; write to cmd
 
 	; draw top row of border
-	.ccmd #0	; write transparent space
-	.ccmd #218	; write top-left corner
-	lda #196	; load horizontal line
+	.ccmd #GLYPH_NONE ; write transparent space
+	.ccmd #GLYPH_TL	; write top-left corner
+	lda #GLYPH_HL	; load horizontal line
 	ldx #28		; initialize counter
 -	.cmd		; write line
 	dex		; decrement counter
 	bne -		; loop until done
-	.ccmd #191	; write top-right corner
-	.ccmd #0	; write transparent space
+	.ccmd #GLYPH_TR	; write top-right corner
+	.ccmd #GLYPH_NONE ; write transparent space
 
 	; prepare to increment string address for line count
 	.cp #0, temp1	; increment by one character
@@ -146,8 +146,8 @@ next	lda temp1	; get line length
 	inc tempA + 1	; yes
 
 	; print line
-+	.ccmd #0	; write transparent space
-	.ccmd #179	; vertical line
++	.ccmd #GLYPH_NONE ; write transparent space
+	.ccmd #GLYPH_VL	; vertical line
 	sty cmd_off	; update offset
 	; store cmd_buf + cmd_off in tempB so load/store can both be Y-indexed
 	lda #<cmd_buf	; get cmd_buf.L
@@ -177,12 +177,12 @@ next	lda temp1	; get line length
 	adc #29		; add max characters per line, plus 1 for negation
 	beq +		; skip fill if line is full-width
 	tax		; move fill count to X
-	lda #' '	; load opaque space
+	lda #GLYPH_SPACE ; load opaque space
 -	.cmd		; write opaque space
 	dex		; decrement count
 	bne -		; loop until done
-+	.ccmd #179	; vertical line
-	.ccmd #0	; write transparent space
++	.ccmd #GLYPH_VL	; vertical line
+	.ccmd #GLYPH_NONE ; write transparent space
 
 	; decrement lines remaining; break if done
 	ldx temp2	; get lines remaining
@@ -191,15 +191,15 @@ next	lda temp1	; get line length
 	bne next	; loop until zero
 
 	; draw line footer
-	.ccmd #0	; write transparent space
-	.ccmd #192	; write bottom-left corner
-	lda #196	; load horizontal line
+	.ccmd #GLYPH_NONE ; write transparent space
+	.ccmd #GLYPH_BL	; write bottom-left corner
+	lda #GLYPH_HL	; load horizontal line
 	ldx #28		; initialize counter
 -	.cmd		; write it
 	dex		; decrement counter
 	bne -		; loop until done
-	.ccmd #217	; write bottom-right corner
-	.ccmd #0	; write transparent space
+	.ccmd #GLYPH_BR	; write bottom-right corner
+	.ccmd #GLYPH_NONE ; write transparent space
 
 	; update cmd_off
 	sty cmd_off	; update offset

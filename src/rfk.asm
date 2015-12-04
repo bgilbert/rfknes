@@ -57,13 +57,24 @@ FOUND_KITTEN_Y = 15
 CONGRATS_X = 8
 CONGRATS_Y = 20
 
+GLYPH_NONE = 0
+GLYPH_KITTEN = 1
+GLYPH_HEART = 2
+GLYPH_TL = 16
+GLYPH_TR = 17
+GLYPH_BL = 18
+GLYPH_BR = 19
+GLYPH_HL = 20
+GLYPH_VL = 21
+GLYPH_SPACE = 32
+
 .section fixed
 palette
 	.byte $0f, $0f, $10, $00
 	.byte $0f, $00, $00, $00
 	.byte $0f, $00, $00, $00
 	.byte $0f, $00, $00, $00
-	.byte $0f, $11, $13, $16  ; last entry is found_kitten heart color
+	.byte $0f, $16, $11, $13  ; first entry is found_kitten heart color
 	.byte $0f, $14, $18, $1a
 	.byte $0f, $1c, $21, $23
 	.byte $0f, $25, $27, $2b
@@ -71,7 +82,7 @@ palette
 start	.proc
 	.cp2 #$c292, rand_state ; initialize random state
 	.cp #>NAMETABLE_0, nametable ; initialize nametable
-	.cp #$88, PPUCTRL ; configure PPU pattern tables; enable NMI
+	.cp #$80, PPUCTRL ; configure PPU; enable NMI
 
 	; initialize OAM buffer and OAM
 	ldx #0		; counter
@@ -402,7 +413,7 @@ next	lda robot_x	; get robot X
 
 	; show heart in sprite 0
 	.cp #8 * (FOUND_KITTEN_Y - 1) - 1, oam ; heart Y
-	.cp #3, oam + 1	; heart glyph
+	.cp #GLYPH_HEART, oam + 1 ; heart glyph
 	.cp #0, oam + 2 ; palette
 	.cp #8 * (FOUND_KITTEN_X - 1), oam + 3 ; heart X
 	ldy cmd_off	; get cmd_buf offset

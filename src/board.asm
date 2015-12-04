@@ -175,12 +175,12 @@ coord	jsr rand	; X coordinate
 	; Pick glyphs and palettes
 	ldy #0		; OAM offset
 -	jsr rand	; glyph
-	and #$7f	; drop high bit
-	cmp #$21	; minimum printable
+	ora #$80	; set high bit
+	cmp #$81	; minimum printable
 	bcc -		; or try again
-	cmp #$7f	; minimum non-printable
+	cmp #$df	; minimum non-printable
 	bcs -		; or try again
-	cmp #ROBOT	; must not be robot!
+	cmp #$83	; must not be robot!
 	beq -		; or try again
 	sta oam + 1,y	; store
 	jsr rand	; palette
@@ -196,7 +196,7 @@ coord	jsr rand	; X coordinate
 
 	; Indicate kitten if debugging
 	.if INDICATE_KITTEN
-	.cp #1, oam + 4 * KITTEN_ITEM + 1 ; set glyph to smiley face
+	.cp #GLYPH_KITTEN, oam + 4 * KITTEN_ITEM + 1 ; set glyph to smiley face
 	.endif
 
 	; Write command
