@@ -82,6 +82,7 @@ palette
 start	.proc
 	.cp2 #$c292, rand_state ; initialize random state
 	.cp #>NAMETABLE_0, nametable ; initialize nametable
+	.cp #0, nmi_ready ; disable NMI handler (for soft reset)
 	.cp #$80, PPUCTRL ; configure PPU; enable NMI
 
 	; initialize pattern table
