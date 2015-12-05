@@ -1,10 +1,11 @@
 all: rfk.nes
 
 SOURCES = \
-	chr/chr.asm \
+	font/glyphs.asm \
 	nki/test.asm \
 	nki/vanilla.asm \
 	src/board.asm \
+	src/chr.asm \
 	src/nes.asm \
 	src/nki.asm \
 	src/nmi.asm \
@@ -15,16 +16,10 @@ SOURCES = \
 rfk.nes rfk.lst: $(SOURCES)
 	64tass --flat --quiet -o "$@" -L "$(@:.nes=.lst)" src/rfk.asm
 
-chr/chr.asm: chr/chr.png chr/makechr.py
-	chr/makechr.py $< > $@
-
-chr/chr.png: font/font.ppm chr/makeimg.py
-	chr/makeimg.py $< $@
-
-font/font.ppm: font/makeimg
+font/glyphs.asm: font/makeglyphs
 	$< > $@
 
-font/makeimg: font/makeimg.c font/font.h
+font/makeglyphs: font/makeglyphs.c font/font.h
 
 nki/%.asm: nki/%.nki nki/maketable.py
 	nki/maketable.py < $< > $@

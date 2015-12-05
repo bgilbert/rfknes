@@ -89,8 +89,8 @@ chr_start =	*
 ; CHR ROM
 .logical 0
 .dsection chr
-.align	$2000, 0
-.cerror	* != $2000, "Incorrect CHR ROM size"
+;.align	$2000, 0
+;.cerror * != $2000, "Incorrect CHR ROM size"
 .here
 
 chr_end =	*
