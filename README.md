@@ -3,10 +3,10 @@
 [robotfindskitten](http://robotfindskitten.org/) for the Nintendo
 Entertainment System.
 
+[Download ROM](https://github.com/bgilbert/rfknes/releases/download/v1.0/rfk-1.0.nes)
+
 ![Title screen](doc/title.png)
 ![Gameplay screenshot](doc/gameplay.png)
-
-[Download ROM](https://github.com/bgilbert/rfknes/releases/download/v1.0/rfk-1.0.nes)
 
 ## Build requirements
 
