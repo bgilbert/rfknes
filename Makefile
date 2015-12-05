@@ -27,6 +27,5 @@ nki/%.asm: nki/%.nki nki/maketable.py
 .PHONY: clean
 clean:
 	@rm -f rfk.nes rfk.lst
-	@rm -f chr/chr.asm chr/chr.png
-	@rm -f font/font.ppm font/makeimg
+	@rm -f font/glyphs.asm font/makeglyphs
 	@rm -f nki/test.asm nki/vanilla.asm
