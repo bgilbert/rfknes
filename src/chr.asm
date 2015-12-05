@@ -18,8 +18,6 @@
 ; 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 ;
 
-.include "../font/glyphs.asm"
-
 .section zeropage
 glyph_addr	.word ?
 glyph_color	.byte ?
@@ -27,6 +25,8 @@ glyph_count	.byte ?
 .send
 
 .section fixed
+.include "../font/glyphs.asm"
+
 ; Initialize CHR RAM.
 init_chr .proc
 	; write sprite special glyphs
