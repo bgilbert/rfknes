@@ -1,4 +1,4 @@
-all: rfk.nes
+all: robotfindskitten.nes
 
 SOURCES = \
 	font/glyphs.asm \
@@ -13,7 +13,7 @@ SOURCES = \
 	src/robot.asm \
 	src/string.asm
 
-rfk.nes rfk.lst: $(SOURCES)
+robotfindskitten.nes robotfindskitten.lst: $(SOURCES)
 	64tass --flat --quiet -o "$@" -L "$(@:.nes=.lst)" src/rfk.asm
 
 font/glyphs.asm: font/makeglyphs
@@ -26,6 +26,6 @@ nki/%.asm: nki/%.nki nki/maketable.py
 
 .PHONY: clean
 clean:
-	@rm -f rfk.nes rfk.lst
+	@rm -f robotfindskitten.nes robotfindskitten.lst
 	@rm -f font/glyphs.asm font/makeglyphs
 	@rm -f nki/test.asm nki/vanilla.asm
