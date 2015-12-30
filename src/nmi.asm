@@ -274,10 +274,12 @@ nmi_stringarr .proc
 	lda cmd_buf + 5,y ; string address high byte
 	sta nmi_data_addr + 1 ; store it
 
+.if MAPPER
 	; switch banks
 	lda cmd_buf + 3,y ; get bank
 	tax		; copy bank to X
 	sta banknums,x	; switch bank, avoiding bus conflicts
+.fi
 
 	; update offset
 	tya		; get offset

@@ -79,16 +79,22 @@ print_nki .proc
 	tax		; put in X
 	iny		; increment offset for entry.H
 	lda (tempA),y	; load entry.H
-	tay		; copy to Y
+	stx tempA	; store entry.L to tempA.L
+.if MAPPER
+	; switch banks; restore implied high bits of address
+	tay		; copy entry.H to Y
 	lsr		; shift to recover high bits of string address
 	lsr
 	ora #$80	; fix the top two bits
 	sta tempA + 1	; and store to tempA.H
-	stx tempA	; store entry.L to tempA.L
 	tya		; get entry.H back again
 	and #$03	; and extract the bank
 	tay		; copy to Y
 	sta banknums,y	; switch bank, avoiding bus conflicts
+.else
+	; use high byte directly
+	sta tempA + 1	; store entry.H to tempA.H
+.fi
 
 	; calculate PPU address and write header
 	ldy #0		; index of line count in string

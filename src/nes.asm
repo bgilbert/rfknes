@@ -18,6 +18,10 @@
 ; 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 ;
 
+.weak
+MAPPER = 1			; Use mapper by default
+.endweak
+
 .cpu "6502i"
 
 prg_banks = (prg_end - prg_start) / 16384
@@ -32,14 +36,27 @@ chr_banks = (chr_end - chr_start) / 8192
 
 prg_start =	*
 
-; PRG ROM variable banks
+; First PRG ROM variable bank, or entire PRG ROM if mapper disabled
 .logical $8000
 .dsection bank0
+.if MAPPER
 .fill 1
 .align	$4000, 0
 .cerror	* != $c000, "Incorrect bank 0 size"
+.else
+.dsection bank1
+.dsection bank2
+.dsection bank3
+.dsection fixed
+.cerror	* < $8000 || * >= $fffa, "Incorrect PRG ROM size"
+* =	$fffa
+.word	(nmi, reset, irq)
+.fi
 .here
 
+.if MAPPER
+
+; Other PRG ROM variable banks
 .logical $8000
 .dsection bank1
 .fill 1
@@ -63,6 +80,8 @@ banknums .byte range(prg_banks)	; for avoiding bus conflicts in bank swaps
 * =	$fffa
 .word	(nmi, reset, irq)
 .here
+
+.fi
 
 prg_end =	*
 

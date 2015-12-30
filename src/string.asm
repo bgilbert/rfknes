@@ -40,6 +40,10 @@ string	.segment
 ; Record string in string table
 ; args: string_name
 stringentry .macro
+.if MAPPER
 	.byte <\1_addr
 	.byte ((\1_addr >> 6) & $fc) | \1_bank
+.else
+	.word \1_addr
+.fi
 	.endm
