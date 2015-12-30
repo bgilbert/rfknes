@@ -11,3 +11,4 @@ Edge cases to test:
 - Finding kitten when NKI text is showing (two adjacent NKIs)
 - Two adjacent NKIs drawing text on opposite sides of screen
 - Two adjacent NKIs with different numbers of text lines
+- NROM build

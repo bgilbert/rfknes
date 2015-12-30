@@ -17,6 +17,16 @@ Entertainment System.
 
 ## Building
 
+### Standard build (for emulation)
+
 ```
 make
+```
+
+### NROM build (for copying onto a donor cartridge)
+
+This build imposes a limit on the total size of the non-kitten items.
+
+```
+make nrom
 ```
