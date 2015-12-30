@@ -24,6 +24,7 @@ glyph_color	.byte ?
 glyph_count	.byte ?
 .send
 
+.if MAPPER
 .section fixed
 .include "../font/glyphs.asm"
 
@@ -159,3 +160,17 @@ next_glyph .proc
 +	rts
 	.pend
 .send
+
+.else
+
+.section chr
+.include "../font/chr.asm"
+.send
+
+.section fixed
+init_chr .proc
+	rts
+	.pend
+.send
+
+.fi

@@ -31,7 +31,11 @@ chr_banks = (chr_end - chr_start) / 8192
 .byte	($4e, $45, $53, $1a)	; Magic
 .byte	prg_banks		; PRG ROM size, 16 KB units
 .byte	chr_banks		; CHR ROM size, 8 KB units
+.if MAPPER
 .byte	2 << 4			; Mapper 2
+.else
+.byte	0			; NROM
+.fi
 .fill	9
 
 prg_start =	*
@@ -107,8 +111,10 @@ chr_start =	*
 ; CHR ROM
 .logical 0
 .dsection chr
-;.align	$2000, 0
-;.cerror * != $2000, "Incorrect CHR ROM size"
+.ifeq MAPPER
+.align	$2000, 0
+.cerror * != $2000, "Incorrect CHR ROM size"
+.fi
 .here
 
 chr_end =	*
