@@ -26,12 +26,12 @@
 #define TEXT_START 0x20
 #define TEXT_END 0x7f
 
-uint8_t sprites[] = {
+const uint8_t sprites[] = {
     0,		// empty space
     1,		// smiley face
     3,		// heart
 };
-uint8_t background[] = {
+const uint8_t background[] = {
     218,	// top-left corner
     191,	// top-right corner
     192,	// bottom-left corner
