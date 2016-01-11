@@ -193,6 +193,7 @@ reset	.proc
 	bpl -		; loop until set
 
 	; Clear PPU RAM
+.if MAPPER
 	lda #0		; get zero
 	sta PPUADDR	; store high byte
 	sta PPUADDR	; store low byte
@@ -204,6 +205,7 @@ reset	.proc
 	inx		; increment counter.H
 	cpx #$30	; stop at $3000
 	bne -		; continue until done
+.fi
 	bit PPUSTATUS	; clear address latch
 	.cp #$3f, PPUADDR ; palette RAM address high byte
 	.cp #$0, PPUADDR ; palette RAM address low byte
