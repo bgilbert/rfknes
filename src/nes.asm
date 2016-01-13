@@ -179,7 +179,7 @@ reset	.proc
 	sta tempA	; low byte of base address
 	sta tempA + 1	; high byte of base address
 	ldx #0		; high byte of base address (reg)
-	ldy #2		; index
+	ldy #0		; index
 -	sta (tempA),y	; write byte
 	iny		; increment index
 	bne -		; loop until Y overflows
