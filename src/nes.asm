@@ -207,8 +207,8 @@ reset	.proc
 	bne -		; continue until done
 .fi
 	bit PPUSTATUS	; clear address latch
-	.cp #$3f, PPUADDR ; palette RAM address high byte
-	.cp #$0, PPUADDR ; palette RAM address low byte
+	.cp #>PALETTE_BG, PPUADDR ; palette RAM address high byte
+	.cp #<PALETTE_BG, PPUADDR ; palette RAM address low byte
 	ldx #$20	; size of palette RAM
 	lda #0		; data value
 -	sta PPUDATA	; write byte
