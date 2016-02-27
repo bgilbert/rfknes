@@ -26,7 +26,7 @@
 .include "nki.asm"
 .include "nmi.asm"
 
-VERSION = "1.0"
+VERSION = "1.1"
 
 ; Debug options
 INDICATE_KITTEN = 0	; use smiley-face glyph for kitten
